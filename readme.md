@@ -1,46 +1,32 @@
-# 🚀 1차 프로젝트: QA 이슈 관리 가이드
+# 1. 가상환경 생성 및 활성화
+python -m venv .venv
+.venv\Scripts\activate
 
-본 프로젝트는 실제 현업 개발팀의 워크플로우를 경험하기 위해 **회사 표준 이슈 풀(Issue Pool) 양식**을 사용합니다. 모든 수강생(Racer)은 발견한 결함이나 개선 사항을 아래 가이드에 따라 보고해주시기 바랍니다.
+# 2. 패키지 설치
+pip install -r requirements.txt
+#위 명령어 실행 안될 시 
+pip install selenium
+pip install pytest
+pip install python-dotenv
+pip install pytest-html
+pip install pytest-sugar
 
----
 
-## 🛠 1. 이슈 보고 방법 (How to Report)
+# 3. 계정 파일 생성
+copy .env.example .env
+```
+src 파일과 동일 경로에 .env 파일 생성
+5번 후 생성된 `.env` 파일을 열어 **본인 계정**을 채우세요 (URL은 이미 입력되어 있음):
 
-1. **이슈 생성**: 왼쪽 메뉴의 **Issues** > **[New issue]** 버튼을 클릭합니다.
-2. **템플릿 선택**: `Description` 영역 상단의 **[Choose a template]** 드롭다운을 눌러 유형을 선택합니다.
-   - `bug_report`: 기능 오류 및 결함 보고
-   - `improvement_report`: UI/UX 개선 및 기능 제안
-3. **내용 작성**: 양식에 맞춰 내용을 기입합니다. (재현 경로는 상세할수록 좋습니다!)
-4. **저장**: 하단의 **[Create issue]**를 누르면 자동으로 기본 라벨이 부여됩니다.
+```
+LOGIN_URL=https://dev-qaproject-helpy-chat.dev.elicer.io/
+LOGIN_EMAIL=본인계정
+LOGIN_PASSWORD=본인비밀번호
+```
 
----
+# 전체 실행 + HTML 리포트 생성
+pytest src\test_login_pj.py -v -s --html=report.html --self-contained-html
 
-## 🏷 2. 라벨(Label) 운영 규정
-
-본 프로젝트는 효율적인 관리를 위해 **Scoped Label(`::`)** 시스템을 사용합니다. 라벨을 변경하면 이전 상태는 자동으로 삭제됩니다.
-
-### 🚦 상태 (Status)
-| 라벨명 | 의미 | 비고 |
-| :--- | :--- | :--- |
-| `상태::TODO` | 확인 및 수정이 필요한 대기 상태 | 이슈 생성 시 기본값 |
-| `상태::WON'T DO` | 중복 리포트, 정상 동작, 또는 수정 불필요 판명 시 | 운영진 가이드에 따라 변경 |
-
-### 🛠 업무 유형 (Type)
-- `업무유형::버그`: 프로덕트의 기술적 결함
-- `업무유형::개선`: 기획적 개선 제안 및 편의성 향상
-
-### ⚡ 우선순위 (Priority)
-- `우선순위::P0`: 서비스 이용 불가 등 최우선 수정 필요
-- `우선순위::P1~P2`: 주요 기능 오류 및 일반 결함
-- `우선순위::P3~P4`: 사소한 UI 오타 및 단순 건의
-
----
-
-## 💡 유의사항 (Tips for Racers)
-
-- **중복 확인**: 이슈를 올리기 전, 이미 다른 조원이나 수강생이 올린 유사한 내용이 있는지 **Search** 기능을 통해 먼저 확인하세요. (동일 오류는 한 건으로 취합합니다.)
-- **데이터 보호**: 재현용 계정 이메일 외에 개인정보(전화번호 등)가 스크린샷에 노출되지 않도록 주의하세요.
-- **증거 첨부**: 오류 화면 캡처나 로그 데이터는 해결 속도를 2배 이상 높여줍니다. 본문에 `Ctrl+V`로 바로 붙여넣으세요.
-
----
-*문의사항은 QA 트랙 운영 매니저에게 전달 바랍니다.*
+# 특정 테스트만 실행
+pytest src\test_login_pj.py::test_login_success -v -s
+```
