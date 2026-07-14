@@ -5,6 +5,7 @@ python -m venv .venv
 ```
 
 # 2. 패키지 설치
+```
 pip install -r requirements.txt
 #위 명령어 실행 안될 시 
 pip install selenium
@@ -12,7 +13,7 @@ pip install pytest
 pip install python-dotenv
 pip install pytest-html
 pip install pytest-sugar
-
+```
 
 # 3. 계정 파일 생성
 copy .env.example .env
