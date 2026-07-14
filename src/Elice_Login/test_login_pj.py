@@ -54,6 +54,18 @@ def test_back_button_keeps_login(logged_in_driver):
     assert icon.is_displayed()
 
 
+def test_refresh_keeps_login(logged_in_driver):
+    """로그인 후 메인페이지에서 새로고침(F5) -> 로그인 상태 유지"""
+    driver = logged_in_driver  # conftest fixture: 로그인 완료된 브라우저
+
+    driver.refresh()
+
+    # 새로고침 후에도 프로필 아이콘(로그인 상태 마커)이 다시 나타나면 유지된 것
+    icon = WebDriverWait(driver, 15).until(EC.presence_of_element_located(PROFILE_ICON))
+    print(f"\n[세션 유지] 새로고침 후 프로필 아이콘 표시: {icon.is_displayed()}")
+    assert icon.is_displayed()
+
+
 def test_logout(driver, credentials):
     """TID 57: 프로필 -> 로그아웃 -> 아이디 저장된 로그인 페이지로 복귀"""
     open_login_page(driver, credentials["url"])

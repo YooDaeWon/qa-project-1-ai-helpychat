@@ -1,0 +1,5 @@
+selenium>=4.6
+pytest
+python-dotenv
+pytest-html
+pytest-sugar
