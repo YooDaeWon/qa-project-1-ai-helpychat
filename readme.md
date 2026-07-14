@@ -1,6 +1,8 @@
 # 1. 가상환경 생성 및 활성화
+```
 python -m venv .venv
 .venv\Scripts\activate
+```
 
 # 2. 패키지 설치
 pip install -r requirements.txt
