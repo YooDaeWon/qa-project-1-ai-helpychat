@@ -1,4 +1,4 @@
-selenium>=4.6
+selenium>=4.46
 pytest
 python-dotenv
 pytest-html
