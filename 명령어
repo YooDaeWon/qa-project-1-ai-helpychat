@@ -1,0 +1,11 @@
+#입력 후 새로고침 히스토리 자동화 실행 코드
+python -m pytest "C:\EQA\workspace\pythonEx\src\issue-report\test_history_refresh.py" -v -s 
+
+#히스토리 삭제 테스트
+python -m pytest "C:\EQA\workspace\pythonEx\src\issue-report\test_history.py::test_history_can_be_deleted" -v -s
+
+#재로그인 및 히스토리 복원 테스트
+python -m pytest "C:\EQA\workspace\pythonEx\src\issue-report\test_history.py::test_history_survives_relogin" -v -s
+
+#히스토리 여러개 삭제 테스트
+python -m pytest "C:\EQA\workspace\pythonEx\src\issue-report\test_history_bulk_delete.py" -v -s
