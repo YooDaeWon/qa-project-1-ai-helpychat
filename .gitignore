@@ -1,0 +1,9 @@
+venv/
+.pytest_cache/
+.vscode/
+*.pyc
+__pycache__/
+dist/
+build/
+.env
+report.html
