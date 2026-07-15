@@ -18,3 +18,8 @@ screenshots/
 .vscode/
 dist/
 build/
+
+# Selenium 프로필 및 임시 파일
+helpychat-selenium-profile/
+report.html
+*.log

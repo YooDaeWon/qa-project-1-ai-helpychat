@@ -1,6 +1,6 @@
 import sys
-from pathlib import Path
 import time
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -10,12 +10,13 @@ from pages.login_page import LoginPage
 from pages.chat_page import ChatPage
 
 
+##-------10회 이상 동일 질문 반복 전송, AI동일 답변 응답 TEST-----##
+
 QUESTION = "30 × 90 = 무엇인가?"
 REPEAT_COUNT = 10
 
 
 def validate_answer(answer: str):
-
     if answer == "":
         return False
 
@@ -35,7 +36,6 @@ def validate_answer(answer: str):
 
 
 def main():
-
     driver = get_driver()
 
     try:
@@ -87,9 +87,10 @@ def main():
         print("TC002 PASS")
         print("=" * 60)
 
-        input("결과 확인 후 Enter를 누르세요.")
-
     finally:
+        # ===== [추가된 부분] 브라우저 종료 전 3초 대기 =====
+        print("\n테스트가 모두 종료되었습니다. 3초 후 브라우저를 닫습니다...")
+        time.sleep(3)
         driver.quit()
 
 

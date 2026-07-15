@@ -22,7 +22,26 @@ class ChatPage:
     def input_question(self, text):
         textbox = self.get_input_box()
         textbox.clear()
-        textbox.send_keys(text)
+
+        # 1. 텍스트 내에 BMP 범위를 벗어나는 문자(이모지 등)가 있는지 사전 검사
+        has_non_bmp = any(ord(char) > 0xFFFF for char in text)
+
+        if has_non_bmp:
+            # 2. 이모지가 포함된 경우: 브라우저 내장 텍스트 삽입 명령어(insertText) 사용
+            textbox.click()  # 입력창에 포커스를 맞춤
+
+            js_code = """
+            var input = arguments[0];
+            var text = arguments[1];
+            input.focus();
+            // 브라우저 자체 기능으로 텍스트를 '붙여넣기' 한 것과 같은 효과를 냄
+            document.execCommand('insertText', false, text);
+            """
+            self.driver.execute_script(js_code, textbox, text)
+
+        else:
+            # 3. 일반 텍스트인 경우: 정상적으로 키보드 입력
+            textbox.send_keys(text)
 
     def get_input_value(self):
         return self.get_input_box().get_attribute("value")
@@ -157,6 +176,21 @@ class ChatPage:
         )
 
         return len(images) > 0
+
+    # ======================================================
+    # 추가: 웹 검색 기능
+    # ======================================================
+
+    def click_web_search_menu(self):
+        """
+        '+' 버튼 클릭 후 나타나는 '웹 검색' 메뉴를 클릭합니다.
+        """
+        web_search_menu = WebDriverWait(self.driver, WAIT_TIME).until(
+            EC.element_to_be_clickable(
+                (By.XPATH, "//span[text()='웹 검색']/ancestor::li")
+            )
+        )
+        self.driver.execute_script("arguments[0].click();", web_search_menu)
 
     # ======================================================
     # TC007 추천 질문
