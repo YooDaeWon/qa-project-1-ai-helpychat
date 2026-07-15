@@ -30,16 +30,20 @@ LOGIN_PASSWORD=본인비밀번호
 
 # 4. 테스트 실행
 ```
-# 전체 실행 + HTML 리포트 생성
-pytest src\Elice_Login\test_login_pj.py -v --html=report.html --self-contained-html
+# 전체 실행 (확인 값 로그 포함)
+pytest src\Elice_Login\test_login_pj.py --log-cli-level=INFO
 
 # 특정 테스트만 실행 (함수명에 TID가 붙어 있음)
-pytest src\Elice_Login\test_login_pj.py::test_tid41_login_success -v
+pytest src\Elice_Login\test_login_pj.py::test_tid41_login_success --log-cli-level=INFO
+
+# HTML 리포트 생성
+pytest src\Elice_Login\test_login_pj.py --log-cli-level=INFO --html=report.html --self-contained-html
 ```
 - 로그인 테스트 코드는 `src\Elice_Login\` 폴더에 있습니다 (`conftest.py` + `test_login_pj.py`).
 - 접속하면 영문 페이지로 리다이렉트되므로, 테스트가 언어 드롭다운으로 한국어 페이지로 전환한 뒤 검증합니다.
-- 실행하면 각 테스트 아래에 실제 확인 값(화면 문구, 브라우저 말풍선, placeholder 등)이
-  `INFO` 로그로 실시간 출력됩니다. 루트의 `pytest.ini`(log_cli) 설정 덕분에 `-s`, `-v` 옵션 없이도 보입니다.
+- `--log-cli-level=INFO` 옵션을 붙이면 각 테스트 아래에 실제 확인 값(화면 문구, 브라우저 말풍선,
+  placeholder 등)이 `INFO` 로그로 실시간 출력됩니다. 옵션을 빼면 로그 없이 조용히 실행됩니다.
+  (다른 팀원의 실행 방식에 영향을 주지 않도록 공통 설정 파일 대신 옵션 방식을 사용)
 - 실패 시에는 assert 메시지로 기대값과 실제값이 함께 표시됩니다.
 
 실행 화면 예시:
