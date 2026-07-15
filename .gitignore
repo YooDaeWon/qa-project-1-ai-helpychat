@@ -1,9 +1,22 @@
-venv/
-.pytest_cache/
-.vscode/
-*.pyc
-__pycache__/
-dist/
-build/
+# 로그인 정보
 .env
-report.html
+
+# Python 가상환경 및 캐시
+.venv/
+__pycache__/    
+*.pyc       
+.pytest_cache/
+
+# Selenium 데이터와 결과 이미지
+.helpychat-selenium-profile/
+screenshots/
+
+# VS Code 개인 설정
+.vscode/
+.gitlab/
+
+# Selenium/Chrome test profiles
+.helpychat-selenium-profile/
+.helpychat-selenium-profile*/
+
+#
