@@ -1,3 +1,8 @@
+## 깃 업로드순서
+git add
+git commit -m "(커밋내용)"
+git push origin "develop"
+
 ## 필수 라이브러리 설치
 python -m pip install -r requirements.txt
 
