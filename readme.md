@@ -38,4 +38,14 @@ pytest src\Elice_Login\test_login_pj.py::test_tid40_login_success -v
 ```
 - 로그인 테스트 코드는 `src\Elice_Login\` 폴더에 있습니다 (`conftest.py` + `test_login_pj.py`).
 - 접속하면 영문 페이지로 리다이렉트되므로, 테스트가 언어 드롭다운으로 한국어 페이지로 전환한 뒤 검증합니다.
-- 실패 원인은 assert 메시지로 출력되므로 `-s` 옵션은 필요 없습니다.
+- 실행하면 각 테스트 아래에 실제 확인 값(화면 문구, 브라우저 말풍선, placeholder 등)이
+  `INFO` 로그로 실시간 출력됩니다. 루트의 `pytest.ini`(log_cli) 설정 덕분에 `-s`, `-v` 옵션 없이도 보입니다.
+- 실패 시에는 assert 메시지로 기대값과 실제값이 함께 표시됩니다.
+
+실행 화면 예시:
+```
+src/Elice_Login/test_login_pj.py::test_tid14_wrong_password
+------------------------------ live log call ------------------------------
+INFO  화면 문구: '이메일 또는 비밀번호가 일치하지 않습니다.'
+PASSED
+```

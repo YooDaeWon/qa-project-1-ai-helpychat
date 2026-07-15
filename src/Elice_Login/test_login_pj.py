@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import logging
+
 import pytest
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -7,6 +9,9 @@ from selenium.webdriver.support import expected_conditions as EC
 
 # 명시적 대기 기본 시간 (초)
 DEFAULT_TIMEOUT = 15
+
+# 통과 증적용 로거 (pytest.ini의 log_cli 설정으로 터미널에 실시간 출력)
+log = logging.getLogger(__name__)
 
 # ══════════════════════════════════════════════════════════════
 # 셀렉터 (한국어 로그인 페이지 HTML 기준, 빌드 시 변하지 않는 속성만 사용)
@@ -99,13 +104,18 @@ def expect_login_error(driver, url, email, password, expected_msg):
     except TimeoutException:
         pass
     found = driver.find_elements(*ERROR_TEXT)
-    return found[0].text if found else ""
+    text = found[0].text if found else ""
+    log.info("화면 문구: '%s'", text)
+    return text
 
 
 def focused_validation(driver):
     """브라우저 기본 검증(HTML required)이 지목한 입력칸 name과 안내문구를 반환."""
     focused = driver.switch_to.active_element
-    return focused.get_attribute("name"), focused.get_attribute("validationMessage")
+    field = focused.get_attribute("name")
+    msg = focused.get_attribute("validationMessage")
+    log.info("브라우저가 지목한 칸: %s | 안내문구: '%s'", field, msg)
+    return field, msg
 
 
 @pytest.fixture
@@ -141,6 +151,7 @@ def test_refresh_keeps_login(logged_in_driver):
     icon = WebDriverWait(logged_in_driver, DEFAULT_TIMEOUT).until(
         EC.presence_of_element_located(PROFILE_ICON)
     )
+    log.info("새로고침 후 프로필 아이콘 표시: %s", icon.is_displayed())
     assert icon.is_displayed(), "새로고침 후 프로필 아이콘이 사라짐 (로그인 풀림)"
 
 
@@ -225,6 +236,9 @@ def test_email_format_error(shared_driver, credentials, tid, email_value):
     )
     found = shared_driver.find_elements(*ERROR_TEXT)
     screen_msg = found[0].text if found else ""
+    browser_msg = email_el.get_attribute("validationMessage")
+    log.info("[TID %s] typeMismatch=%s | 화면 문구: '%s' | 브라우저 말풍선: '%s'",
+             tid, type_mismatch, screen_msg, browser_msg)
 
     assert type_mismatch is True or MSG_INVALID_FORMAT in screen_msg, (
         f"[TID {tid}] 입력 '{email_value}'가 차단되지 않음. "
@@ -241,6 +255,8 @@ def test_tid6_email_special_char(shared_driver, credentials):
         credentials["password"],
         MSG_INVALID_FORMAT,
     )
+    browser_msg = shared_driver.find_element(*EMAIL_INPUT).get_attribute("validationMessage")
+    log.info("브라우저 말풍선: '%s' (특수문자는 말풍선 없음)", browser_msg)
     assert MSG_INVALID_FORMAT in msg, f"[TID 6] 실제 화면 문구: '{msg}'"
 
 
@@ -336,6 +352,7 @@ def test_tid29_email_placeholder(shared_driver, credentials):
     """TID 29: 이메일 입력창 placeholder '이메일' 노출"""
     open_login_page(shared_driver, credentials["url"])
     placeholder = shared_driver.find_element(*EMAIL_INPUT).get_attribute("placeholder")
+    log.info("이메일 placeholder: '%s'", placeholder)
     assert placeholder == "이메일", f"[TID 29] 실제 placeholder: '{placeholder}'"
 
 
@@ -344,6 +361,7 @@ def test_tid30_email_click_focus(shared_driver, credentials):
     open_login_page(shared_driver, credentials["url"])
     shared_driver.find_element(*EMAIL_INPUT).click()
     name = shared_driver.switch_to.active_element.get_attribute("name")
+    log.info("클릭 후 포커스된 칸: %s", name)
     assert name == "loginId", f"[TID 30] 클릭 후 포커스된 칸: {name} (기대: loginId)"
 
 
@@ -351,6 +369,7 @@ def test_tid31_password_placeholder(shared_driver, credentials):
     """TID 31: 비밀번호 입력창 placeholder '비밀번호' 노출"""
     open_login_page(shared_driver, credentials["url"])
     placeholder = shared_driver.find_element(*PASSWORD_INPUT).get_attribute("placeholder")
+    log.info("비밀번호 placeholder: '%s'", placeholder)
     assert placeholder == "비밀번호", f"[TID 31] 실제 placeholder: '{placeholder}'"
 
 
@@ -359,6 +378,7 @@ def test_tid32_password_click_focus(shared_driver, credentials):
     open_login_page(shared_driver, credentials["url"])
     shared_driver.find_element(*PASSWORD_INPUT).click()
     name = shared_driver.switch_to.active_element.get_attribute("name")
+    log.info("클릭 후 포커스된 칸: %s", name)
     assert name == "password", f"[TID 32] 클릭 후 포커스된 칸: {name} (기대: password)"
 
 
@@ -375,11 +395,15 @@ def test_tid35_password_masking_toggle(shared_driver, credentials):
     WebDriverWait(shared_driver, 5).until(
         lambda d: d.find_element(*PASSWORD_INPUT).get_attribute("type") == "text"
     )
+    log.info("버튼 클릭 후 type: %s",
+             shared_driver.find_element(*PASSWORD_INPUT).get_attribute("type"))
     # 재클릭 -> 다시 마스킹(password)으로 복귀
     shared_driver.execute_script("arguments[0].click();", mask_btn)
     WebDriverWait(shared_driver, 5).until(
         lambda d: d.find_element(*PASSWORD_INPUT).get_attribute("type") == "password"
     )
+    log.info("재클릭 후 type: %s",
+             shared_driver.find_element(*PASSWORD_INPUT).get_attribute("type"))
 
 
 # ══════════════════════════════════════════════════════════════
@@ -392,6 +416,7 @@ def test_tid37_forgot_password_navigation(shared_driver, credentials):
     open_login_page(shared_driver, credentials["url"])
     shared_driver.find_element(*FORGOT_PW_LINK).click()
     WebDriverWait(shared_driver, DEFAULT_TIMEOUT).until(EC.url_contains("recover/password"))
+    log.info("이동한 URL: %s", shared_driver.current_url)
     assert "recover/password" in shared_driver.current_url, (
         f"[TID 37] 이동한 URL: {shared_driver.current_url}"
     )
@@ -402,6 +427,7 @@ def test_tid42_signup_navigation(shared_driver, credentials):
     open_login_page(shared_driver, credentials["url"])
     shared_driver.find_element(*SIGNUP_LINK).click()
     WebDriverWait(shared_driver, DEFAULT_TIMEOUT).until(EC.url_contains("signup"))
+    log.info("이동한 URL: %s", shared_driver.current_url)
     assert "signup" in shared_driver.current_url, (
         f"[TID 42] 이동한 URL: {shared_driver.current_url}"
     )
