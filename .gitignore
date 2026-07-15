@@ -1,10 +1,15 @@
+#주의사항 : 수정할때 수작업으로 안겹치게 필요한거 추가할것
+
 # 로그인 정보
 .env
 
 # Python 가상환경 및 캐시
 .venv/
+venv/
 __pycache__/    
-*.pyc       
+*.pyc
+*.pyo
+*.pyd       
 .pytest_cache/
 
 # Selenium 데이터와 결과 이미지
@@ -19,4 +24,17 @@ screenshots/
 .helpychat-selenium-profile/
 .helpychat-selenium-profile*/
 
-#
+# Selenium 브라우저 프로필
+selenium_chrome_profile/
+**/selenium_chrome_profile/
+
+# 에이전트 자동화 실행 결과
+createagent_result_*.csv
+deleteagent_result_*.csv
+**/createagent_result_*.csv
+**/deleteagent_result_*.csv
+**/createagent_failure_*.png
+**/deleteagent_failure_*.png
+
+# 로그 파일
+*.log
