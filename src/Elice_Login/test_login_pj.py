@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+from urllib.parse import urlparse
 
 import pytest
 from selenium.common.exceptions import TimeoutException
@@ -26,6 +27,8 @@ ERROR_TEXT = (By.CSS_SELECTOR, "p.Mui-error, p[class*='error']")
 PROFILE_ICON = (By.CSS_SELECTOR, "[data-testid='PersonIcon']")
 # 프로필 아바타를 감싼 클릭 가능한 버튼 (드롭다운 열기용)
 PROFILE_BUTTON = (By.XPATH, "//*[@data-testid='PersonIcon']/ancestor::button")
+# 프로필 드롭다운의 로그아웃 메뉴
+LOGOUT_MENU = (By.XPATH, "//p[text()='로그아웃']")
 # 비밀번호 마스킹(보기) 버튼 - aria-label 및 DOM 구조 기반 (한국어/영어 모두 호환)
 MASKING_BUTTON = (
     By.CSS_SELECTOR,
@@ -92,6 +95,21 @@ def login(driver, url, email, password):
     )
 
 
+def logout(driver):
+    """프로필 드롭다운에서 로그아웃 클릭 후 로그인 페이지 복귀까지 대기."""
+    avatar = WebDriverWait(driver, DEFAULT_TIMEOUT).until(
+        EC.element_to_be_clickable(PROFILE_BUTTON)
+    )
+    driver.execute_script("arguments[0].click();", avatar)
+    logout_btn = WebDriverWait(driver, DEFAULT_TIMEOUT).until(
+        EC.presence_of_element_located(LOGOUT_MENU)
+    )
+    driver.execute_script("arguments[0].click();", logout_btn)
+    WebDriverWait(driver, DEFAULT_TIMEOUT).until(
+        EC.visibility_of_element_located(PASSWORD_INPUT)
+    )
+
+
 def expect_login_error(driver, url, email, password, expected_msg):
     """로그인 시도 후 화면 에러 문구에 expected_msg가 뜰 때까지 대기하고 실제 문구를 반환.
     제한시간 안에 안 뜨면 그 시점의 화면 문구를 그대로 반환한다 (판정은 호출부 assert 담당)."""
@@ -126,7 +144,7 @@ def logged_in_driver(driver, credentials):
 
 
 # ══════════════════════════════════════════════════════════════
-# 로그인 성공 / 세션 유지 / 로그아웃 (TID 41, 23, 24, 58)
+# 로그인 성공 / 세션 유지 / 로그아웃 (TID 41, 23, 24, 58, 59)
 # ══════════════════════════════════════════════════════════════
 
 
@@ -158,18 +176,35 @@ def test_tid24_refresh_keeps_login(logged_in_driver):
 def test_tid58_logout(driver, credentials):
     """TID 58: 프로필 -> 로그아웃 -> 로그인 페이지로 복귀"""
     login(driver, credentials["url"], credentials["email"], credentials["password"])
-    avatar = WebDriverWait(driver, DEFAULT_TIMEOUT).until(
-        EC.element_to_be_clickable(PROFILE_BUTTON)
+    logout(driver)
+    assert driver.find_element(*PASSWORD_INPUT).is_displayed(), (
+        "[TID 58] 로그아웃 후 로그인 페이지로 돌아오지 않음"
     )
-    driver.execute_script("arguments[0].click();", avatar)
-    logout = WebDriverWait(driver, DEFAULT_TIMEOUT).until(
-        EC.presence_of_element_located((By.XPATH, "//p[text()='로그아웃']"))
-    )
-    driver.execute_script("arguments[0].click();", logout)
-    password_back = WebDriverWait(driver, DEFAULT_TIMEOUT).until(
+
+
+def test_tid59_back_after_logout(driver, credentials):
+    """TID 59: 로그아웃 완료 후 뒤로가기(alt+<-) -> 다시 로그인되지 않고 로그아웃 상태 유지"""
+    login(driver, credentials["url"], credentials["email"], credentials["password"])
+    logout(driver)
+    driver.back()
+    # 미인증 상태이므로 뒤로가기해도 메인페이지가 아닌 로그인 화면이어야 함.
+    # (로그아웃 후에는 아이디 저장된 로그인 페이지(signin/history)로 가므로
+    #  signin-form 대신 비밀번호 입력창 존재로 로그인 화면 여부를 판단)
+    pw_field = WebDriverWait(driver, DEFAULT_TIMEOUT).until(
         EC.visibility_of_element_located(PASSWORD_INPUT)
     )
-    assert password_back.is_displayed(), "[TID 58] 로그아웃 후 로그인 페이지로 돌아오지 않음"
+    # 재로그인 판정은 "메인페이지(앱 도메인)로 넘어갔는지"로 확인.
+    # (PersonIcon은 아이디 저장된 로그인 페이지의 계정 아바타에도 쓰여 마커로 부적합)
+    current_host = urlparse(driver.current_url).netloc
+    app_host = urlparse(credentials["url"]).netloc
+    log.info("뒤로가기 후 URL: %s", driver.current_url)
+    assert "signin" in driver.current_url, (
+        f"[TID 59] 뒤로가기 후 로그인 화면이 아님. URL: {driver.current_url}"
+    )
+    assert pw_field.is_displayed(), "[TID 59] 뒤로가기 후 로그인 입력창이 뜨지 않음"
+    assert current_host != app_host, (
+        "[TID 59] 뒤로가기 후 메인페이지로 재진입됨 (로그아웃 유지 실패)"
+    )
 
 
 # ══════════════════════════════════════════════════════════════

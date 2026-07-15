@@ -35,7 +35,7 @@ def driver():
 @pytest.fixture(scope="session")
 def shared_driver():
     """로그인하지 않는 테스트용 공유 브라우저 (전체 실행에서 1회만 열림).
-    로그인 상태를 만드는 테스트(TID 41, 58)는 격리를 위해 driver를 사용할 것."""
+    로그인 상태를 만드는 테스트(TID 41, 58, 59)는 격리를 위해 driver를 사용할 것."""
     drv = _make_driver()
     yield drv
     drv.quit()
