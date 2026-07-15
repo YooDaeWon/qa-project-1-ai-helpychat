@@ -9,3 +9,6 @@ python -m pytest ".\src\history_test\test_history.py::test_history_survives_relo
 
 # history_test 폴더의 전체 테스트 실행
 python -m pytest .\src\history_test -v -s
+
+#필요 모듈 설치
+Get-Content requirements.txt

@@ -20,11 +20,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 load_dotenv()
 
 # .env에 LOGIN_URL이 없을 때 사용할 기본 테스트 주소입니다.
-DEFAULT_URL = (
-    "https://dev-qaproject-helpy-chat.dev.elicer.io/"
-    "?isFirstLogin=true#agents-organization"
-)
-URL = os.getenv("LOGIN_URL", DEFAULT_URL)
+DEFAULT_URL = "https://dev-qaproject-helpy-chat.dev.elicer.io/"
+URL = os.getenv("LOGIN_URL", DEFAULT_URL).strip()
 
 # 화면별 최대 대기시간과 테스트 종료 전 대기시간입니다.
 DEFAULT_TIMEOUT = 90
@@ -221,11 +218,11 @@ def login_if_needed(driver):
         return
 
     # 실제 계정 정보는 코드에 쓰지 않고 .env에서 가져옵니다.
-    email = os.getenv("HELPYCHAT_EMAIL")
-    password = os.getenv("HELPYCHAT_PASSWORD")
+    email = os.getenv("LOGIN_EMAIL")
+    password = os.getenv("LOGIN_PASSWORD")
 
-    if not password:
-        pytest.fail("HELPYCHAT_PASSWORD 환경변수가 설정되지 않았습니다.")
+    if not email:
+        pytest.fail("LOGIN_EMAIL 환경변수가 설정되지 않았습니다.")
 
     # 기억된 계정 화면에서는 이메일 입력창이 없을 수 있습니다.
     email_inputs = driver.find_elements(*EMAIL_LOCATOR)

@@ -15,11 +15,8 @@ import time
 FINISH_DELAY = 5
 load_dotenv()
 
-URL = os.getenv(
-    "LOGIN_URL",
-    "https://dev-qaproject-helpy-chat.dev.elicer.io/"
-    "?isFirstLogin=true#agents-organization",
-)
+DEFAULT_URL = "https://dev-qaproject-helpy-chat.dev.elicer.io/"
+URL = os.getenv("LOGIN_URL", DEFAULT_URL).strip()
 TIMEOUT = 90
 CHAT_READY_TIMEOUT = 180
 
@@ -66,10 +63,10 @@ def login(driver):
     if not driver.find_elements(*PASSWORD):
         return
 
-    email = os.getenv("HELPYCHAT_EMAIL")
-    password = os.getenv("HELPYCHAT_PASSWORD")
+    email = os.getenv("LOGIN_EMAIL")
+    password = os.getenv("LOGIN_PASSWORD")
     if not password:
-        pytest.fail("HELPYCHAT_PASSWORD를 .env에 설정해 주세요.")
+        pytest.fail("LOGIN_PASSWORD .env에 설정해 주세요.")
 
     # 일반 로그인 화면에는 이메일 입력칸이 있지만, 기억된 계정 화면에는
     # 비밀번호 입력칸만 표시되므로 이메일 입력은 있을 때만 수행합니다.
