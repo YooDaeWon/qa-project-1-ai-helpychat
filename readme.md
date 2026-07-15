@@ -34,7 +34,7 @@ LOGIN_PASSWORD=본인비밀번호
 pytest src\Elice_Login\test_login_pj.py -v --html=report.html --self-contained-html
 
 # 특정 테스트만 실행 (함수명에 TID가 붙어 있음)
-pytest src\Elice_Login\test_login_pj.py::test_tid40_login_success -v
+pytest src\Elice_Login\test_login_pj.py::test_tid41_login_success -v
 ```
 - 로그인 테스트 코드는 `src\Elice_Login\` 폴더에 있습니다 (`conftest.py` + `test_login_pj.py`).
 - 접속하면 영문 페이지로 리다이렉트되므로, 테스트가 언어 드롭다운으로 한국어 페이지로 전환한 뒤 검증합니다.

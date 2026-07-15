@@ -120,18 +120,18 @@ def focused_validation(driver):
 
 @pytest.fixture
 def logged_in_driver(driver, credentials):
-    """로그인이 완료된 브라우저를 제공 (TID 23, 세션 유지 테스트용)."""
+    """로그인이 완료된 브라우저를 제공 (TID 23, 24 세션 유지 테스트용)."""
     login(driver, credentials["url"], credentials["email"], credentials["password"])
     return driver
 
 
 # ══════════════════════════════════════════════════════════════
-# 로그인 성공 / 세션 유지 / 로그아웃 (TID 40, 23, 57)
+# 로그인 성공 / 세션 유지 / 로그아웃 (TID 41, 23, 24, 58)
 # ══════════════════════════════════════════════════════════════
 
 
-def test_tid40_login_success(driver, credentials):
-    """TID 40: 올바른 이메일/비밀번호 -> 로그인 성공 (프로필 아이콘 노출)"""
+def test_tid41_login_success(driver, credentials):
+    """TID 41: 올바른 이메일/비밀번호 -> 로그인 성공 (프로필 아이콘 노출)"""
     login(driver, credentials["url"], credentials["email"], credentials["password"])
     assert driver.find_element(*PROFILE_ICON).is_displayed()
 
@@ -145,18 +145,18 @@ def test_tid23_back_button_keeps_login(logged_in_driver):
     assert icon.is_displayed(), "[TID 23] 뒤로가기 후 프로필 아이콘이 사라짐 (로그인 풀림)"
 
 
-def test_refresh_keeps_login(logged_in_driver):
-    """로그인 후 메인페이지에서 새로고침(F5) -> 로그인 상태 유지"""
+def test_tid24_refresh_keeps_login(logged_in_driver):
+    """TID 24: 로그인 완료 후 새로고침(F5) -> 로그인 상태 유지"""
     logged_in_driver.refresh()
     icon = WebDriverWait(logged_in_driver, DEFAULT_TIMEOUT).until(
         EC.presence_of_element_located(PROFILE_ICON)
     )
     log.info("새로고침 후 프로필 아이콘 표시: %s", icon.is_displayed())
-    assert icon.is_displayed(), "새로고침 후 프로필 아이콘이 사라짐 (로그인 풀림)"
+    assert icon.is_displayed(), "[TID 24] 새로고침 후 프로필 아이콘이 사라짐 (로그인 풀림)"
 
 
-def test_tid57_logout(driver, credentials):
-    """TID 57: 프로필 -> 로그아웃 -> 로그인 페이지로 복귀"""
+def test_tid58_logout(driver, credentials):
+    """TID 58: 프로필 -> 로그아웃 -> 로그인 페이지로 복귀"""
     login(driver, credentials["url"], credentials["email"], credentials["password"])
     avatar = WebDriverWait(driver, DEFAULT_TIMEOUT).until(
         EC.element_to_be_clickable(PROFILE_BUTTON)
@@ -169,7 +169,7 @@ def test_tid57_logout(driver, credentials):
     password_back = WebDriverWait(driver, DEFAULT_TIMEOUT).until(
         EC.visibility_of_element_located(PASSWORD_INPUT)
     )
-    assert password_back.is_displayed(), "[TID 57] 로그아웃 후 로그인 페이지로 돌아오지 않음"
+    assert password_back.is_displayed(), "[TID 58] 로그아웃 후 로그인 페이지로 돌아오지 않음"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -315,79 +315,79 @@ def test_tid16_password_too_short(shared_driver, credentials):
 
 
 # ══════════════════════════════════════════════════════════════
-# 페이지 진입 (TID 24~26)
+# 페이지 진입 (TID 25~27)
 # ══════════════════════════════════════════════════════════════
 
 
-def test_tid24_page_load(shared_driver, credentials):
-    """TID 24: 로그인 URL 접속 -> 정상 진입"""
+def test_tid25_page_load(shared_driver, credentials):
+    """TID 25: 로그인 URL 접속 -> 정상 진입"""
     open_login_page(shared_driver, credentials["url"])
     assert shared_driver.find_element(*LOGIN_FORM).is_displayed()
 
 
-def test_tid25_form_elements_load(shared_driver, credentials):
-    """TID 25: 로그인 폼 구성요소(이메일/비밀번호/버튼) 정상 로드"""
+def test_tid26_form_elements_load(shared_driver, credentials):
+    """TID 26: 로그인 폼 구성요소(이메일/비밀번호/버튼) 정상 로드"""
     open_login_page(shared_driver, credentials["url"])
-    assert shared_driver.find_element(*EMAIL_INPUT).is_displayed(), "[TID 25] 이메일 입력창 없음"
-    assert shared_driver.find_element(*PASSWORD_INPUT).is_displayed(), "[TID 25] 비밀번호 입력창 없음"
-    assert shared_driver.find_element(*LOGIN_BUTTON).is_displayed(), "[TID 25] 로그인 버튼 없음"
+    assert shared_driver.find_element(*EMAIL_INPUT).is_displayed(), "[TID 26] 이메일 입력창 없음"
+    assert shared_driver.find_element(*PASSWORD_INPUT).is_displayed(), "[TID 26] 비밀번호 입력창 없음"
+    assert shared_driver.find_element(*LOGIN_BUTTON).is_displayed(), "[TID 26] 로그인 버튼 없음"
 
 
-def test_tid26_page_refresh(shared_driver, credentials):
-    """TID 26: 새로고침(F5) 후에도 로그인 페이지 정상 로드"""
+def test_tid27_page_refresh(shared_driver, credentials):
+    """TID 27: 새로고침(F5) 후에도 로그인 페이지 정상 로드"""
     open_login_page(shared_driver, credentials["url"])
     shared_driver.refresh()
     form = WebDriverWait(shared_driver, DEFAULT_TIMEOUT).until(
         EC.visibility_of_element_located(LOGIN_FORM)
     )
-    assert form.is_displayed(), "[TID 26] 새로고침 후 로그인 폼이 뜨지 않음"
+    assert form.is_displayed(), "[TID 27] 새로고침 후 로그인 폼이 뜨지 않음"
 
 
 # ══════════════════════════════════════════════════════════════
-# 입력창 UI (TID 29~32, 35)
+# 입력창 UI (TID 30~33, 36)
 # ══════════════════════════════════════════════════════════════
 
 
-def test_tid29_email_placeholder(shared_driver, credentials):
-    """TID 29: 이메일 입력창 placeholder '이메일' 노출"""
+def test_tid30_email_placeholder(shared_driver, credentials):
+    """TID 30: 이메일 입력창 placeholder '이메일' 노출"""
     open_login_page(shared_driver, credentials["url"])
     placeholder = shared_driver.find_element(*EMAIL_INPUT).get_attribute("placeholder")
     log.info("이메일 placeholder: '%s'", placeholder)
-    assert placeholder == "이메일", f"[TID 29] 실제 placeholder: '{placeholder}'"
+    assert placeholder == "이메일", f"[TID 30] 실제 placeholder: '{placeholder}'"
 
 
-def test_tid30_email_click_focus(shared_driver, credentials):
-    """TID 30: 이메일 입력창 클릭 -> 활성화(포커스)"""
+def test_tid31_email_click_focus(shared_driver, credentials):
+    """TID 31: 이메일 입력창 클릭 -> 활성화(포커스)"""
     open_login_page(shared_driver, credentials["url"])
     shared_driver.find_element(*EMAIL_INPUT).click()
     name = shared_driver.switch_to.active_element.get_attribute("name")
     log.info("클릭 후 포커스된 칸: %s", name)
-    assert name == "loginId", f"[TID 30] 클릭 후 포커스된 칸: {name} (기대: loginId)"
+    assert name == "loginId", f"[TID 31] 클릭 후 포커스된 칸: {name} (기대: loginId)"
 
 
-def test_tid31_password_placeholder(shared_driver, credentials):
-    """TID 31: 비밀번호 입력창 placeholder '비밀번호' 노출"""
+def test_tid32_password_placeholder(shared_driver, credentials):
+    """TID 32: 비밀번호 입력창 placeholder '비밀번호' 노출"""
     open_login_page(shared_driver, credentials["url"])
     placeholder = shared_driver.find_element(*PASSWORD_INPUT).get_attribute("placeholder")
     log.info("비밀번호 placeholder: '%s'", placeholder)
-    assert placeholder == "비밀번호", f"[TID 31] 실제 placeholder: '{placeholder}'"
+    assert placeholder == "비밀번호", f"[TID 32] 실제 placeholder: '{placeholder}'"
 
 
-def test_tid32_password_click_focus(shared_driver, credentials):
-    """TID 32: 비밀번호 입력창 클릭 -> 활성화(포커스)"""
+def test_tid33_password_click_focus(shared_driver, credentials):
+    """TID 33: 비밀번호 입력창 클릭 -> 활성화(포커스)"""
     open_login_page(shared_driver, credentials["url"])
     shared_driver.find_element(*PASSWORD_INPUT).click()
     name = shared_driver.switch_to.active_element.get_attribute("name")
     log.info("클릭 후 포커스된 칸: %s", name)
-    assert name == "password", f"[TID 32] 클릭 후 포커스된 칸: {name} (기대: password)"
+    assert name == "password", f"[TID 33] 클릭 후 포커스된 칸: {name} (기대: password)"
 
 
-def test_tid35_password_masking_toggle(shared_driver, credentials):
-    """TID 35: 마스킹 버튼 클릭 -> 비밀번호 표시/숨김 토글"""
+def test_tid36_password_masking_toggle(shared_driver, credentials):
+    """TID 36: 마스킹 버튼 클릭 -> 비밀번호 표시/숨김 토글"""
     open_login_page(shared_driver, credentials["url"])
     pw_el = shared_driver.find_element(*PASSWORD_INPUT)
     pw_el.send_keys("toggle_test_123")
-    assert pw_el.get_attribute("type") == "password", "[TID 35] 초기 상태가 마스킹(password)이 아님"
+    assert pw_el.get_attribute("type") == "password", "[TID 36] 초기 상태가 마스킹(password)이 아님"
 
     mask_btn = shared_driver.find_element(*MASKING_BUTTON)
     # 클릭 -> 표시(text)로 전환
@@ -407,27 +407,27 @@ def test_tid35_password_masking_toggle(shared_driver, credentials):
 
 
 # ══════════════════════════════════════════════════════════════
-# 링크 이동 (TID 37, 42)
+# 링크 이동 (TID 38, 43)
 # ══════════════════════════════════════════════════════════════
 
 
-def test_tid37_forgot_password_navigation(shared_driver, credentials):
-    """TID 37: 비밀번호 찾기 링크 클릭 -> 비밀번호 찾기 페이지 이동"""
+def test_tid38_forgot_password_navigation(shared_driver, credentials):
+    """TID 38: 비밀번호 찾기 링크 클릭 -> 비밀번호 찾기 페이지 이동"""
     open_login_page(shared_driver, credentials["url"])
     shared_driver.find_element(*FORGOT_PW_LINK).click()
     WebDriverWait(shared_driver, DEFAULT_TIMEOUT).until(EC.url_contains("recover/password"))
     log.info("이동한 URL: %s", shared_driver.current_url)
     assert "recover/password" in shared_driver.current_url, (
-        f"[TID 37] 이동한 URL: {shared_driver.current_url}"
+        f"[TID 38] 이동한 URL: {shared_driver.current_url}"
     )
 
 
-def test_tid42_signup_navigation(shared_driver, credentials):
-    """TID 42: 회원가입 링크 클릭 -> 회원가입 페이지 이동"""
+def test_tid43_signup_navigation(shared_driver, credentials):
+    """TID 43: 회원가입 링크 클릭 -> 회원가입 페이지 이동"""
     open_login_page(shared_driver, credentials["url"])
     shared_driver.find_element(*SIGNUP_LINK).click()
     WebDriverWait(shared_driver, DEFAULT_TIMEOUT).until(EC.url_contains("signup"))
     log.info("이동한 URL: %s", shared_driver.current_url)
     assert "signup" in shared_driver.current_url, (
-        f"[TID 42] 이동한 URL: {shared_driver.current_url}"
+        f"[TID 43] 이동한 URL: {shared_driver.current_url}"
     )
