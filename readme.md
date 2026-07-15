@@ -1,4 +1,4 @@
-# 1. 가상환경 생성 및 활성화
+# 1. 로그인 테스트 가상환경 생성 및 활성화
 ```
 python -m venv .venv
 .venv\Scripts\activate
