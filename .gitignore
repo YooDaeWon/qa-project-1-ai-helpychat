@@ -29,6 +29,9 @@ helpychat-selenium-profile/
 selenium_chrome_profile/
 **/selenium_chrome_profile/
 
+# 개인 로컬 백업
+local_backup/
+
 # 자동화 실행 결과
 artifacts/*.csv
 artifacts/failures/*.png

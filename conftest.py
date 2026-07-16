@@ -6,7 +6,13 @@ from datetime import datetime
 import pytest
 from selenium import webdriver
 
-from src.config.config import LOGIN_URL, Settings, load_settings
+from src.config.config import (
+    LOGIN_EMAIL,
+    LOGIN_PASSWORD,
+    LOGIN_URL,
+    Settings,
+    load_settings,
+)
 from src.core.driver import get_driver
 from src.pages.login_page import LoginPage
 
@@ -100,6 +106,40 @@ def setup_and_login(driver: webdriver.Chrome) -> webdriver.Chrome:
 def logged_in_driver(setup_and_login: webdriver.Chrome) -> webdriver.Chrome:
     """이름이 명확한 로그인 완료 드라이버 별칭 fixture입니다."""
     return setup_and_login
+
+
+@pytest.fixture(scope="session")
+def shared_driver(request: pytest.FixtureRequest) -> webdriver.Chrome:
+    """로그인하지 않는 테스트용 공유 브라우저 (전체 실행에서 1회만 열림).
+    로그인 상태를 만드는 테스트는 격리를 위해 driver를 사용할 것."""
+    headless = bool(request.config.getoption("--headless"))
+    browser = get_driver(headless=headless)
+    yield browser
+    browser.quit()
+
+
+@pytest.fixture(autouse=True)
+def _reset_shared_driver(request: pytest.FixtureRequest) -> None:
+    """shared_driver를 쓰는 테스트 시작 전에 쿠키와 웹 스토리지를 비워,
+    앞선 테스트에서 세션이 생겨도 다음 테스트로 새어가지 않게 한다."""
+    if "shared_driver" in request.fixturenames:
+        drv = request.getfixturevalue("shared_driver")
+        drv.delete_all_cookies()
+        # localStorage/sessionStorage는 쿠키와 별개로 남으므로 함께 정리.
+        # (첫 실행처럼 아직 사이트에 접속 전이면 접근이 차단되므로 try로 감싼다)
+        drv.execute_script(
+            "try { window.localStorage.clear(); window.sessionStorage.clear(); } catch (e) {}"
+        )
+
+
+@pytest.fixture(scope="session")
+def credentials() -> dict:
+    """로그인 테스트에서 사용하는 계정 정보 (.env 값)."""
+    return {
+        "url": LOGIN_URL,
+        "email": LOGIN_EMAIL,
+        "password": LOGIN_PASSWORD,
+    }
 
 
 @pytest.hookimpl(hookwrapper=True)
