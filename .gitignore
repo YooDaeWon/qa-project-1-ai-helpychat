@@ -1,0 +1,40 @@
+# 환경변수 및 계정 정보
+.env
+
+# Python 가상환경 및 캐시
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# IDE 개인 설정
+.vscode/
+
+# 빌드 산출물
+build/
+dist/
+
+# 테스트 리포트 및 로그
+report.html
+reports/
+*.log
+
+# Selenium 프로필
+helpychat-selenium-profile/
+.helpychat-selenium-profile/
+.helpychat-selenium-profile*/
+selenium_chrome_profile/
+**/selenium_chrome_profile/
+
+# 자동화 실행 결과
+artifacts/*.csv
+artifacts/failures/*.png
+createagent_result_*.csv
+deleteagent_result_*.csv
+**/createagent_result_*.csv
+**/deleteagent_result_*.csv
+**/createagent_failure_*.png
+**/deleteagent_failure_*.png
