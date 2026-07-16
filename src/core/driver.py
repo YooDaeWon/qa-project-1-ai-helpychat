@@ -1,13 +1,9 @@
-<<<<<<< HEAD
 from __future__ import annotations
 
-=======
->>>>>>> 유대원
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 
-<<<<<<< HEAD
 def create_chrome_options(headless: bool = False) -> Options:
     """Chrome 실행 옵션을 생성합니다."""
     options = Options()
@@ -43,17 +39,3 @@ def create_driver(headless: bool = False) -> webdriver.Chrome:
 def get_driver(headless: bool = False) -> webdriver.Chrome:
     """기존 팀 테스트와 호환되는 WebDriver 생성 함수입니다."""
     return create_driver(headless=headless)
-=======
-def get_driver():
-    """
-    Chrome WebDriver 생성
-    """
-
-    options = Options()
-
-    options.add_argument("--start-maximized")
-
-    driver = webdriver.Chrome(options=options)
-
-    return driver
->>>>>>> 유대원
