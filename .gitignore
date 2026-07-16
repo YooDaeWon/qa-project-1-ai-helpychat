@@ -12,14 +12,18 @@ __pycache__/
 
 # IDE 개인 설정
 .vscode/
+.gitlab/
 
 # 빌드 산출물
 build/
 dist/
 
-# 테스트 리포트 및 로그
+# 테스트 리포트 및 결과
 report.html
 reports/
+screenshots/
+
+# 로그 파일
 *.log
 
 # Selenium 프로필
@@ -41,3 +45,6 @@ deleteagent_result_*.csv
 **/deleteagent_result_*.csv
 **/createagent_failure_*.png
 **/deleteagent_failure_*.png
+
+# 주의사항
+# 수정할 때는 수작업으로 중복되지 않게 필요한 항목만 추가할 것

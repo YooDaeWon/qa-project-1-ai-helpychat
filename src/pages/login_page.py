@@ -52,7 +52,9 @@ class LoginPage(BasePage):
         return self.find_first_visible(self.LOGIN_BUTTON_LOCATORS)
 
     def is_login_page(self) -> bool:
-        return self.get_email_input() is not None and self.get_password_input() is not None
+        return (
+            self.get_email_input() is not None and self.get_password_input() is not None
+        )
 
     def is_service_page(self, base_url: str) -> bool:
         if self.is_login_page():
@@ -102,9 +104,7 @@ class LoginPage(BasePage):
     ) -> None:
         """로그인 화면일 때만 로그인하고 완료 상태까지 검증합니다."""
         if not login_email or not login_password:
-            raise ValueError(
-                ".env에 LOGIN_EMAIL과 LOGIN_PASSWORD를 입력해주세요."
-            )
+            raise ValueError(".env에 LOGIN_EMAIL과 LOGIN_PASSWORD를 입력해주세요.")
 
         print("로그인 상태 확인 중...")
         page_state = self.wait_for_login_or_service_page(base_url)
@@ -198,7 +198,10 @@ class LoginUiPage:
     FORM = (By.CSS_SELECTOR, "form[data-cy='signin-form']")
     EMAIL_INPUT = (By.CSS_SELECTOR, "input[name='loginId']")
     PASSWORD_INPUT = (By.CSS_SELECTOR, "input[name='password']")
-    LOGIN_BUTTON = (By.CSS_SELECTOR, "form[data-cy='signin-form'] button[type='submit']")
+    LOGIN_BUTTON = (
+        By.CSS_SELECTOR,
+        "form[data-cy='signin-form'] button[type='submit']",
+    )
     # 화면에 뜨는 에러 문구 요소 (MUI 에러 텍스트)
     ERROR_TEXT = (By.CSS_SELECTOR, "p.Mui-error, p[class*='error']")
     # 비밀번호 마스킹(보기) 버튼 - aria-label 및 DOM 구조 기반 (한국어/영어 모두 호환)
@@ -331,8 +334,9 @@ class LoginUiPage:
     def wait_password_type(self, expected):
         """비밀번호 입력창 type이 기대값으로 바뀔 때까지 대기."""
         self.wait.until(
-            lambda d: d.find_element(*self.PASSWORD_INPUT).get_attribute("type")
-            == expected
+            lambda d: (
+                d.find_element(*self.PASSWORD_INPUT).get_attribute("type") == expected
+            )
         )
 
     # ── 링크 이동 ─────────────────────────────────────────

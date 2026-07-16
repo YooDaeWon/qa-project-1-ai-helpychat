@@ -74,9 +74,7 @@ def driver(
     if report is not None and report.failed:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         screenshot_path = (
-            settings.artifacts_dir
-            / "failures"
-            / f"{request.node.name}_{timestamp}.png"
+            settings.artifacts_dir / "failures" / f"{request.node.name}_{timestamp}.png"
         )
         try:
             browser.save_screenshot(str(screenshot_path))
@@ -92,11 +90,16 @@ def driver(
 @pytest.fixture
 def setup_and_login(driver: webdriver.Chrome) -> webdriver.Chrome:
     """브라우저 상태를 초기화하고 로그인한 드라이버를 제공합니다."""
+
+    # 로그인 페이지 접속
     driver.get(LOGIN_URL)
+
+    # 쿠키 및 스토리지 초기화 (유대원 브랜치 기능 반영)
     driver.delete_all_cookies()
     driver.execute_script("window.localStorage.clear();")
     driver.execute_script("window.sessionStorage.clear();")
 
+    # 로그인
     LoginPage(driver).login()
 
     yield driver
@@ -110,8 +113,7 @@ def logged_in_driver(setup_and_login: webdriver.Chrome) -> webdriver.Chrome:
 
 @pytest.fixture(scope="session")
 def shared_driver(request: pytest.FixtureRequest) -> webdriver.Chrome:
-    """로그인하지 않는 테스트용 공유 브라우저 (전체 실행에서 1회만 열림).
-    로그인 상태를 만드는 테스트는 격리를 위해 driver를 사용할 것."""
+    """로그인하지 않는 테스트용 공유 브라우저 (전체 실행에서 1회만 열림)."""
     headless = bool(request.config.getoption("--headless"))
     browser = get_driver(headless=headless)
     yield browser
@@ -120,13 +122,10 @@ def shared_driver(request: pytest.FixtureRequest) -> webdriver.Chrome:
 
 @pytest.fixture(autouse=True)
 def _reset_shared_driver(request: pytest.FixtureRequest) -> None:
-    """shared_driver를 쓰는 테스트 시작 전에 쿠키와 웹 스토리지를 비워,
-    앞선 테스트에서 세션이 생겨도 다음 테스트로 새어가지 않게 한다."""
+    """shared_driver를 사용하는 테스트의 세션을 초기화합니다."""
     if "shared_driver" in request.fixturenames:
         drv = request.getfixturevalue("shared_driver")
         drv.delete_all_cookies()
-        # localStorage/sessionStorage는 쿠키와 별개로 남으므로 함께 정리.
-        # (첫 실행처럼 아직 사이트에 접속 전이면 접근이 차단되므로 try로 감싼다)
         drv.execute_script(
             "try { window.localStorage.clear(); window.sessionStorage.clear(); } catch (e) {}"
         )
