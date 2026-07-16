@@ -39,3 +39,8 @@ def setup_and_login(driver):
 
     # 로그인이 완료된 드라이버 객체를 테스트 함수에 전달
     yield driver
+
+    # 테스트가 모두 끝난 후 실행되는 부분
+    print("\n테스트가 모두 종료되었습니다. 3초 후 브라우저를 닫습니다...")
+    time.sleep(5)  # 브라우저 종료 전 3초 대기
+    driver.quit()
