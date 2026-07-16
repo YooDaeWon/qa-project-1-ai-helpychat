@@ -2,3 +2,4 @@ selenium==4.46.0
 pytest==9.1.1
 python-dotenv==1.2.2
 pytest-html==4.1.1
+pytest-sugar

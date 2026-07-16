@@ -12,6 +12,16 @@ def create_chrome_options(headless: bool = False) -> Options:
     options.add_argument("--disable-popup-blocking")
     options.add_argument("--disable-infobars")
 
+    # Chrome '비밀번호 유출 감지' 팝업이 로그인 테스트를 막지 않도록 비활성화
+    options.add_experimental_option(
+        "prefs",
+        {
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False,
+            "profile.password_manager_leak_detection": False,
+        },
+    )
+
     if headless:
         options.add_argument("--headless=new")
         options.add_argument("--window-size=1920,1080")
