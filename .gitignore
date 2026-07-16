@@ -20,6 +20,7 @@ dist/
 # 테스트 리포트 및 로그
 report.html
 reports/
+screenshots/
 *.log
 
 # Selenium 프로필
