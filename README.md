@@ -66,16 +66,3 @@ INFO  화면 문구: '이메일 또는 비밀번호가 일치하지 않습니다
 PASSED
 ```
 
-## 깃 업로드 순서
-
-```
-git add .
-git commit -m "(커밋내용)"
-git push origin "(본인 브랜치)"
-```
-
-## 참고
-
-- `.env`, 가상환경, 캐시, CSV 결과, 실패 스크린샷은 Git에 올리지 않습니다.
-- `src/config/config.py`, `src/core/driver.py`, `src/pages/login_page.py`, 루트 `conftest.py`는 팀 공통 파일입니다.
-- 페이지 구조나 셀렉터가 바뀌면 해당 Page Object만 수정합니다.
