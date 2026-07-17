@@ -39,11 +39,6 @@ BASE_URL = LOGIN_URL
 DEFAULT_TIMEOUT = 90
 CHAT_READY_TIMEOUT = 180
 SCREENSHOT_DIR = PROJECT_ROOT / "screenshots"
-AUTOMATION_HISTORY_PREFIXES = (
-    "history_save_",
-    "history_relogin_",
-    "history_delete_",
-)
 
 
 @dataclass(frozen=True)
