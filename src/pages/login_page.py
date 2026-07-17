@@ -52,9 +52,8 @@ class LoginPage(BasePage):
         return self.find_first_visible(self.LOGIN_BUTTON_LOCATORS)
 
     def is_login_page(self) -> bool:
-        return (
-            self.get_email_input() is not None and self.get_password_input() is not None
-        )
+        # After logout, a remembered account can show only the password field.
+        return self.get_password_input() is not None
 
     def is_service_page(self, base_url: str) -> bool:
         if self.is_login_page():
@@ -115,11 +114,10 @@ class LoginPage(BasePage):
 
         print("로그인 페이지 감지됨. 자동 로그인 진행")
 
-        email_input = WebDriverWait(self.driver, self.timeout).until(
-            lambda _: self.get_email_input() or False
-        )
-        email_input.clear()
-        email_input.send_keys(login_email)
+        email_input = self.get_email_input()
+        if email_input is not None:
+            email_input.clear()
+            email_input.send_keys(login_email)
         print("Email 입력 완료")
 
         password_input = WebDriverWait(self.driver, self.timeout).until(

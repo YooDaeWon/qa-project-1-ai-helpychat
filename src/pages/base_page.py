@@ -133,6 +133,35 @@ class BasePage:
 
         return None
 
+    @staticmethod
+    def normalize(text: str | None) -> str:
+        """UI 텍스트 비교를 위해 공백을 하나로 정리합니다."""
+        return " ".join((text or "").split())
+
+    def first_visible(
+        self,
+        locators: Iterable[tuple[str, str]],
+    ) -> WebElement | bool:
+        """history 테스트와 호환되는 visible element 조회 helper입니다."""
+        element = self.find_first_visible(locators)
+        if element is not None and element.is_enabled():
+            return element
+        return False
+
+    def wait_visible(
+        self,
+        locators: Iterable[tuple[str, str]],
+        timeout: int | None = None,
+    ) -> WebElement:
+        """history 테스트에서 쓰는 여러 locator 대기 helper입니다."""
+        return WebDriverWait(self.driver, timeout or self.timeout).until(
+            lambda _: self.first_visible(locators)
+        )
+
+    def click(self, element: WebElement) -> None:
+        """history 테스트와 호환되는 click helper입니다."""
+        self.safe_click(element)
+
     def save_screenshot(self, path: Path) -> Path:
         """현재 화면을 지정한 경로에 저장합니다."""
         path.parent.mkdir(

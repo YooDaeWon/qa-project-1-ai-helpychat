@@ -14,6 +14,7 @@ from src.config.config import (
     load_settings,
 )
 from src.core.driver import get_driver
+from src.pages.history_page import HistoryPage
 from src.pages.login_page import LoginPage
 
 
@@ -109,6 +110,18 @@ def setup_and_login(driver: webdriver.Chrome) -> webdriver.Chrome:
 def logged_in_driver(setup_and_login: webdriver.Chrome) -> webdriver.Chrome:
     """이름이 명확한 로그인 완료 드라이버 별칭 fixture입니다."""
     return setup_and_login
+
+
+@pytest.fixture
+def history_page(driver: webdriver.Chrome) -> HistoryPage:
+    """히스토리 테스트용 Page Object fixture입니다."""
+    return HistoryPage(driver)
+
+
+@pytest.fixture
+def login_page(driver: webdriver.Chrome) -> LoginPage:
+    """히스토리 재로그인 테스트에서 사용하는 로그인 Page Object fixture입니다."""
+    return LoginPage(driver)
 
 
 @pytest.fixture(scope="session")
