@@ -67,17 +67,17 @@ PASSED
 ```
 
 #히스토리 테스트 예시
-# 1. 히스토리 저장 테스트
+ 1. 히스토리 저장 테스트
 python -m pytest tests/test_history/test_history_save.py -v -s --tb=long
-# 2. 재로그인 후 히스토리 유지 테스트
+ 2. 재로그인 후 히스토리 유지 테스트
 python -m pytest tests/test_history/test_history_relogin.py -v -s --tb=long
-# 3. 히스토리 1개 생성 후 삭제 테스트
+ 3. 히스토리 1개 생성 후 삭제 테스트
 python -m pytest tests/test_history/test_history_delete.py::test_history_can_be_deleted -v -s --tb=long
-# 4. 삭제 개수를 직접 입력하는 다중 삭제 테스트
+ 4. 삭제 개수를 직접 입력하는 다중 삭제 테스트
 python -m pytest tests/test_history/test_history_delete.py::test_delete_histories_by_count -v -s --tb=long
-# 5. 삭제 개수를 미리 지정해서 다중 삭제
+ 5. 삭제 개수를 미리 지정해서 다중 삭제
 $env:HISTORY_DELETE_COUNT="3"
 python -m pytest tests/test_history/test_history_delete.py::test_delete_histories_by_count -v -s --tb=long
-# 6. 히스토리 테스트 전체 실행
+ 6. 히스토리 테스트 전체 실행
 $env:HISTORY_DELETE_COUNT="1"
 python -m pytest tests/test_history -v -s --tb=long
