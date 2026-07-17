@@ -11,18 +11,22 @@ def test_history_can_be_deleted(history_page):
     history_key = message
 
     # 준비: 다른 히스토리와 구분되는 테스트 전용 히스토리를 생성합니다.
+    print(f"\n[CREATE] 삭제 테스트용 히스토리 생성: {history_key}")
     history_page.open()
     history_page.send_message(message)
     history_page.wait_for_message(message)
     history_page.wait_for_history(history_key)
 
     # 실행 및 1차 검증: 생성한 히스토리를 삭제하고 목록에서 사라졌는지 확인합니다.
+    print(f"[DELETE 1/1] {history_key}")
     history_page.delete_history(history_key)
     assert not history_page.history_item(history_key)
 
     # 최종 검증: 새로고침 후에도 삭제된 히스토리가 복구되지 않아야 합니다.
+    print(f"[VERIFY] 새로고침 후 삭제 상태 확인: {history_key}")
     history_page.refresh()
     assert not history_page.history_item(history_key)
+    print("[PASS] 히스토리 1개 삭제 완료")
 
 
 def test_delete_histories_by_count(history_page):
@@ -52,12 +56,20 @@ def test_delete_histories_by_count(history_page):
 
     # 화면에 표시된 순서의 앞쪽 항목부터 요청한 개수만큼 삭제합니다.
     targets = titles[:delete_count]
+    print("\n삭제 대상:")
     for title in targets:
+        print(f"- {title}")
+
+    print()
+    for index, title in enumerate(targets, start=1):
+        print(f"[DELETE {index}/{len(targets)}] {title}")
         history_page.delete_history(title)
 
     # 새로고침 후에도 모든 대상이 목록에서 사라진 상태인지 최종 확인합니다.
+    print("\n[VERIFY] 새로고침 후 삭제 상태 확인")
     history_page.refresh()
     for title in targets:
         assert not history_page.history_item(title), (
             f"새로고침 후 삭제한 히스토리가 다시 나타났습니다: {title}"
         )
+    print(f"[PASS] 히스토리 {len(targets)}개 삭제 완료")
