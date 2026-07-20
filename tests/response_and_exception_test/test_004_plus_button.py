@@ -35,9 +35,9 @@ def test_plus_button_features(setup_and_login):
             chat.click_file_upload_menu()
             chat.upload_file(data["path"])
 
-        # 기능 선택 후 전송 전 2.5초 대기 (눈으로 확인 가능)
-        print(f"  [!] {feature} 선택 완료, 전송 전 2.5초 대기 중...")
-        time.sleep(2)
+        # 기능 선택 후 전송 전 1.5초 대기 (눈으로 확인 가능)
+        print(f"  [!] {feature} 선택 완료, 전송 전 1.5초 대기 중...")
+        time.sleep(1.5)
 
         # 3) 질문 입력 및 전송
         if data["type"] != "file":
@@ -60,6 +60,5 @@ def test_plus_button_features(setup_and_login):
             assert answer, f"{feature} 응답 없음"
 
         print(f"  [✓] [{feature}] 기능 PASS")
-        time.sleep(2)
 
     print("\n🎉 모든 '+' 버튼 기능 테스트가 성공했습니다. 🎉")

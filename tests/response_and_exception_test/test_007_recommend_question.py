@@ -5,13 +5,13 @@ from src.pages.chat_page import ChatPage
 
 def test_recommend_questions(setup_and_login):
     """
-    [TC_007] 'AI헬피 추천 질문' 기능 검증 (메인 화면 & 응답 영역)
+    [TC_007] 'AI헬피 추천 질문' 기능 동작 테스트 (메인 화면 & 응답 영역)
     """
     driver = setup_and_login
     chat = ChatPage(driver)
 
     print("\n" + "=" * 70)
-    print(" [TC_007] AI헬피 추천 질문 기능 검증 시작 ")
+    print(" [TC_007] AI헬피 추천 질문 기능 동작 테스트 시작 ")
     print("=" * 70)
 
     # 1차 검증: 로그인 후 메인 화면
@@ -19,7 +19,7 @@ def test_recommend_questions(setup_and_login):
     run_recommendation_flow(chat)
 
     # 응답 영역 생성을 위해 짧은 대기 후 다시 시도
-    time.sleep(2)
+    time.sleep(1)
 
     # 2차 검증: 응답 후 다시 나타난 추천 질문 영역
     print("\n▶ [2차 검증] 응답 영역 내 추천 질문 선택")
