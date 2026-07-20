@@ -21,6 +21,9 @@ from src.pages.login_page import (
 
 log = logging.getLogger(__name__)
 
+# 이 파일의 모든 테스트에 login 마커 적용 (pytest -m login 으로 선택 실행)
+pytestmark = pytest.mark.login
+
 
 @pytest.fixture
 def page(shared_driver, credentials):
