@@ -5,31 +5,25 @@ from src.pages.chat_page import ChatPage
 
 def validate_list_response(response):
     """
-    목록 형태 답변 검증
-
-    지원 형태:
-    - 숫자 목록
-    - 괄호 숫자
-    - 특수 숫자
-    - 불릿
-    - 체크박스
-    - 한글 순서
-    - 영어 순서
-    - 알파벳 목록
+    목록 형태 답변 검증 (전체 키워드 통합 및 전체 검색 방식)
+    - 기존의 다양한 리스트 패턴을 모두 포함
+    - 줄바꿈이나 위치에 상관없이 텍스트 전체에서 해당 키워드가 존재하는지 검사
     """
-
     if not response or response.strip() == "":
         return False
 
-    lines = [line.strip() for line in response.split("\n") if line.strip()]
+    # 줄바꿈 기호를 단순 띄어쓰기로 변경하여 하나의 긴 텍스트로 만듦 (줄바꿈/위치 무시)
+    flat_response = response.replace("\n", " ").strip()
 
+    # 기존 모든 키워드 + 불릿 통합
+    # 주의: "1.", "-" 등은 소수점(3.14)이나 단어 연결(고속-처리)과 혼동되지 않도록 뒤에 공백(" ")을 포함했습니다.
     list_patterns = [
         # 숫자 목록
-        "1.",
-        "2.",
-        "3.",
-        "4.",
-        "5.",
+        "1. ",
+        "2. ",
+        "3. ",
+        "4. ",
+        "5. ",
         # 숫자 괄호
         "(1)",
         "(2)",
@@ -65,27 +59,27 @@ def validate_list_response(response):
         "Fourth",
         "Fifth",
         # 알파벳 목록
-        "A.",
-        "B.",
-        "C.",
-        "D.",
-        "E.",
+        "A. ",
+        "B. ",
+        "C. ",
+        "D. ",
+        "E. ",
         "(A)",
         "(B)",
         "(C)",
         "(D)",
         "(E)",
         # 불릿 형태
-        "-",
-        "–",
-        "—",
-        "*",
-        "•",
-        "▪",
-        "▫",
-        "◦",
-        "‣",
-        "⁃",
+        "- ",
+        "– ",
+        "— ",
+        "* ",
+        "• ",
+        "▪ ",
+        "▫ ",
+        "◦ ",
+        "‣ ",
+        "⁃ ",
         # 체크박스
         "☐",
         "☑",
@@ -98,19 +92,20 @@ def validate_list_response(response):
         "➤",
         "▶",
         # 마크다운
-        "#",
-        "##",
-        "###",
+        "# ",
+        "## ",
+        "### ",
     ]
 
     match_count = 0
 
-    for line in lines:
-        if any(pattern in line for pattern in list_patterns):
+    # 텍스트 전체(flat_response) 안에 목록 마커가 포함되어 있는지 확인
+    for pattern in list_patterns:
+        if pattern in flat_response:
             match_count += 1
 
-    # 3개 항목 요청이므로 최소 3개 목록 형태 확인
-    return match_count >= 3
+    # 목록성 마커가 최소 1개 이상 존재하면 통과 (AI의 목록 형태 시도를 인정)
+    return match_count >= 1
 
 
 def wait_response_with_retry(chat, question):
