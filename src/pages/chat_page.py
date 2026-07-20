@@ -63,11 +63,23 @@ class ChatPage:
     # 일반 응답
     # ======================================================
 
-    def wait_response_complete(self):
+    def wait_response_complete(self, timeout=120):
+        """
+        AI 응답 완료 대기
+
+        기본 동작:
+        - 기존 테스트는 120초 대기 유지
+
+        timeout 변경 가능:
+        - TC008 예외 입력 테스트에서
+        빠른 응답 확인 및 재시도 로직 사용 가능
+        """
+
         before = len(
             self.driver.find_elements(By.CSS_SELECTOR, "div[data-status='complete']")
         )
-        WebDriverWait(self.driver, 120).until(
+
+        WebDriverWait(self.driver, timeout).until(
             lambda d: (
                 len(d.find_elements(By.CSS_SELECTOR, "div[data-status='complete']"))
                 > before

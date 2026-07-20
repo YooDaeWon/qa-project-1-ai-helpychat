@@ -1,13 +1,22 @@
 import pytest
-import time
 from src.pages.chat_page import ChatPage
 
 
 def test_context_retention(setup_and_login):
     """
-    [TC_006] 문맥 유지 검증 테스트
-    - 11회의 연속 질문을 통해 초기 정보(생일)와 주제(별자리)를 기억하는지 확인
+    [TC_006] 멀티턴 대화 문맥 유지 및 이전 정보 기억 테스트
+
+    검증 항목:
+    1. 여러 번의 연속 대화 후 이전 사용자 정보 유지 여부
+    2. 초기 질문의 핵심 정보(생일, 별자리) 기억 여부
+    3. 장시간 대화 이후에도 문맥 연결 가능 여부
+
+    테스트 흐름:
+    - 첫 질문에서 생일 정보 제공
+    - 별자리 관련 연속 대화 진행
+    - 마지막 질문에서 초기 정보 기억 여부 검증
     """
+
     driver = setup_and_login
     chat = ChatPage(driver)
 
@@ -26,39 +35,51 @@ def test_context_retention(setup_and_login):
     ]
 
     print("\n" + "=" * 60)
-    print(" [TC_006] 문맥 유지 검증 테스트 시작 ")
+    print(" [TC_006] 멀티턴 대화 문맥 유지 테스트 시작 ")
     print("=" * 60)
 
+    # 1. 연속 질문 진행
     for i, question in enumerate(questions):
-        print(f"\n▶ 질문 {i + 1} : {question}")
+        print(f"\n▶ 질문 {i + 1}: {question}")
+
         chat.input_question(question)
         chat.click_send_button()
+
+        # AI 응답 완료까지 대기
         chat.wait_response_complete()
 
         response = chat.get_last_response()
-        print(f"▷ 응답 완료 (길이: {len(response)}자)")
-        time.sleep(2)
 
-    # 최종 검증 단계
+        if response:
+            print(f"▷ 응답 완료 (길이: {len(response)}자)")
+        else:
+            print("▷ 응답 없음")
+
+    # 2. 마지막 응답 검증
     final_response = chat.get_last_response()
+
     print("\n" + "=" * 60)
-    print(f" [최종 응답 확인]:\n{final_response}")
+    print("[최종 응답 확인]")
+    print(final_response)
     print("=" * 60)
 
-    # 2. [수정된 검증 로직]
-    # 문맥 유지 조건이 모두 포함되어 있는지 확인
-    # "전갈자리"라는 단어와, "11월" 그리고 "15일"이라는 단어가 따로 떨어져 있어도 포함만 되어있다면 PASS
-    is_pass = ("전갈자리" in final_response) and (
-        "11월" in final_response and "15일" in final_response
-    )
+    assert final_response, "최종 응답이 존재하지 않습니다."
 
-    # 3. 결과 출력 및 실패 시 상세 메시지
-    assert is_pass, (
+    # 초기 대화 정보 기억 여부 확인
+    required_keywords = [
+        "전갈자리",
+        "11월",
+        "15일",
+    ]
+
+    missing_keywords = [
+        keyword for keyword in required_keywords if keyword not in final_response
+    ]
+
+    assert not missing_keywords, (
         f"\n[문맥 유지 검증 실패]\n"
-        f" - 확인이 필요한 핵심 정보: '전갈자리', '11월', '15일'\n"
-        f" - 실제 응답 확인: 전갈자리({'전갈자리' in final_response}), "
-        f"11월({'11월' in final_response}), 15일({'15일' in final_response})\n"
-        f" - 전체 응답 내용: {final_response}"
+        f"누락된 정보: {missing_keywords}\n"
+        f"최종 응답:\n{final_response}"
     )
 
-    print("🎉 문맥 유지 검증 PASS: AI가 이전 대화 내용을 정확히 기억하고 있습니다.")
+    print("🎉 문맥 유지 검증 PASS: AI가 이전 대화 정보를 유지하고 있습니다.")

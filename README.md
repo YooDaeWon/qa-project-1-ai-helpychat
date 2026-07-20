@@ -105,27 +105,97 @@ INFO  화면 문구: '이메일 또는 비밀번호가 일치하지 않습니다
 PASSED
 ```
 
-## 5. 히스토리 테스트
 
-### 5.1. 히스토리 저장 테스트
+## 5. 입력창 입력값, 응답 영역 기본 기능 및 예외 질문 동작 / AI 답변 테스트
+
+테스트 코드 폴더 : tests/response_and_exception_test
+
+### 5.1. 한글, 영문, 숫자, 한·영·숫자 혼합 입력 검증 테스트
+
+```powershell
+python -m pytest tests/response_and_exception_test/test_001_input_mix.py -v -s
+```
+
+입력한 값들이 정상적으로 입력되며, 질문 전송 및 AI 답변이 출력됩니다.
+
+### 5.2. 동일한 반복 질문 10회 이상 질의응답 시 AI 답변 테스트
+
+```powershell
+python -m pytest tests/response_and_exception_test/test_002_repeat_question.py -v -s
+```
+
+동일한 질문을 10회 반복 요청 시 AI가 동일한 내용을 포함한 답변을 출력합니다.
+
+### 5.3. 긴 텍스트 입력 길이별 AI 응답 처리 검증 테스트
+
+```powershell
+python -m pytest tests/response_and_exception_test/test_003_long_question.py -v -s
+```
+
+100자, 500자, 1000자 입력 시 질문이 입력 및 전송되며 AI가 답변합니다.
+
+### 5.4. 입력창 부가 기능(+ 버튼) 동작 검증 테스트
+
+```powershell
+python -m pytest tests/response_and_exception_test/test_004_plus_button.py -v -s
+```
+
+'+' 버튼의 이미지 생성, 웹 검색, 파일 업로드 기능을 활용하여 질문 시 AI가 답변합니다.
+
+### 5.5. 대용량 문자 입력 자동화 처리 안정성 테스트
+
+```powershell
+python -m pytest tests/response_and_exception_test/test_005_large_input_length.py -v -s
+```
+
+자동화 환경에서 대용량 문자 입력 처리 시 입력 처 및 질문이 전송되며 AI가 답변합니다.
+
+### 5.6. AI 대화 문맥 유지 및 기억력 검증 테스트
+
+```powershell
+python -m pytest tests/response_and_exception_test/test_006_context_maintenance.py -v -s
+```
+
+이전 대화 내용을 기억하고 문맥을 유지하며, 질문 시 AI가 이를 기억하여 답변합니다.
+
+### 5.7. "AI 헬피 추천 질문" 기능 동작 검증 테스트
+
+```powershell
+python -m pytest tests/response_and_exception_test/test_007_recommend_question.py -v -s
+```
+
+AI 헬피 추천 질문을 선택하여 질문 시 AI가 질문을 확인하고 답변합니다.
+
+### 5.8. 예외 및 특수 입력 처리 안정성 테스트
+
+```powershell
+python -m pytest tests/response_and_exception_test/test_008_various_inputs.py -v -s
+```
+
+특수문자, 이모지, URL, 날짜 등 다양한 예외 입력을 인식하고 처리하며 AI가 답변합니다.
+
+
+## 6. 히스토리 테스트
+
+### 6.1. 히스토리 저장 테스트
 
 ```powershell
 python -m pytest tests/test_history/test_history_save.py -v -s --tb=long
 ```
 
-### 5.2. 재로그인 후 히스토리 유지 테스트
+### 6.2. 재로그인 후 히스토리 유지 테스트
 
 ```powershell
 python -m pytest tests/test_history/test_history_relogin.py -v -s --tb=long
 ```
 
-### 5.3. 히스토리 단건 생성 및 삭제 테스트
+### 6.3. 히스토리 단건 생성 및 삭제 테스트
 
 ```powershell
 python -m pytest tests/test_history/test_history_delete.py::test_history_can_be_deleted -v -s --tb=long
 ```
 
-### 5.4. 삭제 개수를 직접 입력하는 다중 삭제 테스트
+### 6.4. 삭제 개수를 직접 입력하는 다중 삭제 테스트
 
 `--interactive-history-delete` 옵션을 사용하면 테스트 실행 중 삭제할 개수를 직접 입력할 수 있습니다.
 
@@ -133,7 +203,7 @@ python -m pytest tests/test_history/test_history_delete.py::test_history_can_be_
 python -m pytest tests/test_history/test_history_delete.py::test_delete_histories_by_count -v -s --tb=long --interactive-history-delete
 ```
 
-### 5.5. 삭제 개수를 미리 지정하는 다중 삭제 테스트
+### 6.5. 삭제 개수를 미리 지정하는 다중 삭제 테스트
 
 다음 예시는 화면 위에서부터 히스토리 3개를 삭제합니다.
 
@@ -145,7 +215,7 @@ python -m pytest tests/test_history/test_history_delete.py::test_delete_historie
 Remove-Item Env:HISTORY_DELETE_COUNT
 ```
 
-### 5.6. 히스토리 테스트 전체 실행
+### 6.6. 히스토리 테스트 전체 실행
 
 `HISTORY_DELETE_COUNT`와 `--interactive-history-delete`를 지정하지 않으면 다중 삭제 테스트는
 입력을 기다리지 않고 자동으로 건너뛰며, 나머지 테스트는 정상 실행됩니다.

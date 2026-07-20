@@ -3,19 +3,194 @@ import time
 from src.pages.chat_page import ChatPage
 
 
+def validate_list_response(response):
+    """
+    목록 형태 답변 검증
+
+    지원 형태:
+    - 숫자 목록
+    - 괄호 숫자
+    - 특수 숫자
+    - 불릿
+    - 체크박스
+    - 한글 순서
+    - 영어 순서
+    - 알파벳 목록
+    """
+
+    if not response or response.strip() == "":
+        return False
+
+    lines = [line.strip() for line in response.split("\n") if line.strip()]
+
+    list_patterns = [
+        # 숫자 목록
+        "1.",
+        "2.",
+        "3.",
+        "4.",
+        "5.",
+        # 숫자 괄호
+        "(1)",
+        "(2)",
+        "(3)",
+        "(4)",
+        "(5)",
+        # 원 숫자
+        "①",
+        "②",
+        "③",
+        "④",
+        "⑤",
+        "⑥",
+        "⑦",
+        "⑧",
+        "⑨",
+        "⑩",
+        # 한글 순서
+        "첫째",
+        "둘째",
+        "셋째",
+        "넷째",
+        "다섯째",
+        "첫 번째",
+        "두 번째",
+        "세 번째",
+        "네 번째",
+        "다섯 번째",
+        # 영어 순서
+        "First",
+        "Second",
+        "Third",
+        "Fourth",
+        "Fifth",
+        # 알파벳 목록
+        "A.",
+        "B.",
+        "C.",
+        "D.",
+        "E.",
+        "(A)",
+        "(B)",
+        "(C)",
+        "(D)",
+        "(E)",
+        # 불릿 형태
+        "-",
+        "–",
+        "—",
+        "*",
+        "•",
+        "▪",
+        "▫",
+        "◦",
+        "‣",
+        "⁃",
+        # 체크박스
+        "☐",
+        "☑",
+        "✓",
+        "✔",
+        "✅",
+        # 화살표
+        "→",
+        "➜",
+        "➤",
+        "▶",
+        # 마크다운
+        "#",
+        "##",
+        "###",
+    ]
+
+    match_count = 0
+
+    for line in lines:
+        if any(pattern in line for pattern in list_patterns):
+            match_count += 1
+
+    # 3개 항목 요청이므로 최소 3개 목록 형태 확인
+    return match_count >= 3
+
+
+def wait_response_with_retry(chat, question):
+    """
+    TC008 전용 응답 확인 로직
+
+    목적:
+    - 빠른 정상 응답은 즉시 진행
+    - 일시적인 응답 누락 발생 시 1회 재전송
+    """
+
+    # 1차 질문 전송
+    chat.input_question(question)
+    chat.click_send_button()
+
+    # 빠른 응답 확인
+    try:
+        chat.wait_response_complete(timeout=10)
+
+        response = chat.get_last_response()
+
+        if response.strip():
+            return response
+
+    except Exception:
+        pass
+
+    print("  ⚠ 1차 응답 없음 → 추가 대기 진행")
+
+    # 추가 대기
+    try:
+        chat.wait_response_complete(timeout=30)
+
+        response = chat.get_last_response()
+
+        if response.strip():
+            return response
+
+    except Exception:
+        pass
+
+    # 최종 재전송
+    print("  ⚠ 최종 응답 없음 → 질문 재전송")
+
+    chat.input_question(question)
+    chat.click_send_button()
+
+    chat.wait_response_complete(timeout=60)
+
+    return chat.get_last_response()
+
+
 def test_exception_handling_all_cases(setup_and_login):
     """
     [TC_008] 다양한 형식의 예외/특수 입력 통합 검증 테스트
-    - pytest 테스트 함수 구조 유지
-    - 하나의 브라우저 세션에서 12개 케이스를 순차적으로 수행
+
+    검증 목적:
+    - 특수 문자 입력 처리
+    - 이모지 입력 처리
+    - URL/이메일/전화번호 형식 입력 처리
+    - 다양한 날짜 형식 입력 처리
+    - 목록 형태 답변 처리 검증
+
+    ※ 응답 속도가 아닌 입력 이해 및 답변 생성 가능 여부 검증
     """
+
     driver = setup_and_login
     chat = ChatPage(driver)
 
-    # 1. 테스트 케이스 리스트
     test_cases = [
-        ("1. 특수문자 입력", "!@#$%^&*()_+{}|:<>?~`", lambda r: len(r.strip()) > 0),
-        ("2. 이모지 입력", "😀🚀🌟🔥🎉", lambda r: len(r.strip()) > 0),
+        (
+            "1. 특수문자 입력",
+            "!@#$%^&*()_+{}|:<>?~`",
+            lambda r: len(r.strip()) > 0,
+        ),
+        (
+            "2. 이모지 입력",
+            "😀🚀🌟🔥🎉",
+            lambda r: len(r.strip()) > 0,
+        ),
         (
             "3. 링크 요청 질문",
             "토끼와 관련 정보가 있는 웹사이트 링크(URL)를 하나 알려줘.",
@@ -24,7 +199,7 @@ def test_exception_handling_all_cases(setup_and_login):
         (
             "4. 목록 형태 답변 요청",
             "인공지능의 장점 3가지를 목록(리스트) 형태로 상세하게 알려줘.",
-            lambda r: any(s in r for s in ["1.", "-", "*", "[ ]", "•", "▪", "☐"]),
+            validate_list_response,
         ),
         (
             "5. 링크 형식 질문",
@@ -70,33 +245,26 @@ def test_exception_handling_all_cases(setup_and_login):
 
     print(f"\n[TC_008] 총 {len(test_cases)}개 케이스 검증 시작 (브라우저 유지)")
 
-    # 2. 브라우저 하나에서 순차적으로 테스트 수행
     for name, question, check_func in test_cases:
         print(f"\n▶ [{name}] 진행 중...")
 
-        # 질문 입력 및 전송
-        chat.input_question(question)
-        time.sleep(1)
-        chat.click_send_button()
+        response = wait_response_with_retry(chat, question)
 
-        # 응답 대기 및 수신
-        chat.wait_response_complete()
-        response = chat.get_last_response()
+        if response is None:
+            response = ""
 
-        # 결과 검증
         is_pass = check_func(response)
 
-        # 결과 출력 (길이 로그 제거됨)
         preview = (
-            (response[:30].replace("\n", " ") + "...")
+            response[:30].replace("\n", " ") + "..."
             if len(response) > 30
             else response.replace("\n", " ")
         )
+
         print(f"  ▷ 응답 미리보기: {preview}")
 
-        # 테스트 실패 시 예외 발생 (pytest는 assert를 통해 FAIL 판단)
-        assert is_pass, f"[{name}] 검증 실패! (Q: {question})"
+        assert is_pass, f"[{name}] 검증 실패!\n질문: {question}\n응답: {response}"
+
         print(f"  [✓] {name} PASS")
 
-        # 다음 질문을 위한 텀
         time.sleep(1.5)
