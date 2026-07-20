@@ -152,9 +152,10 @@ def login_page(driver: webdriver.Chrome) -> LoginPage:
     return LoginPage(driver)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def shared_driver(request: pytest.FixtureRequest) -> webdriver.Chrome:
-    """로그인하지 않는 테스트용 공유 브라우저 (전체 실행에서 1회만 열림)."""
+    """로그인하지 않는 테스트용 공유 브라우저.
+    (모듈 단위로 1회만 열리고, 해당 파일의 테스트가 끝나면 바로 닫힘)"""
     headless = bool(request.config.getoption("--headless"))
     browser = get_driver(headless=headless)
     yield browser
@@ -163,13 +164,31 @@ def shared_driver(request: pytest.FixtureRequest) -> webdriver.Chrome:
 
 @pytest.fixture(autouse=True)
 def _reset_shared_driver(request: pytest.FixtureRequest) -> None:
-    """shared_driver를 사용하는 테스트의 세션을 초기화합니다."""
-    if "shared_driver" in request.fixturenames:
+    """shared_driver를 사용하는 테스트의 세션을 초기화하고,
+    실패 시 driver fixture와 동일하게 실패 화면을 저장합니다."""
+    uses_shared = "shared_driver" in request.fixturenames
+    if uses_shared:
         drv = request.getfixturevalue("shared_driver")
         drv.delete_all_cookies()
         drv.execute_script(
             "try { window.localStorage.clear(); window.sessionStorage.clear(); } catch (e) {}"
         )
+
+    yield
+
+    if uses_shared:
+        report = getattr(request.node, "rep_call", None)
+        if report is not None and report.failed:
+            settings = request.getfixturevalue("settings")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            screenshot_path = (
+                settings.artifacts_dir / "failures" / f"{request.node.name}_{timestamp}.png"
+            )
+            try:
+                drv.save_screenshot(str(screenshot_path))
+                print(f"실패 화면 저장 완료: {screenshot_path}")
+            except Exception as error:
+                print(f"실패 화면 저장 실패: {error}")
 
 
 @pytest.fixture(scope="session")
