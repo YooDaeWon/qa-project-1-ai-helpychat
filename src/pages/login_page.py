@@ -233,7 +233,10 @@ class LoginUiPage:
     def _ensure_korean(self):
         """언어 드롭다운이 한국어가 아니면 ko-KR로 전환 후 한국어 렌더링 대기.
         (사이트가 언어 선택을 저장하지 않아 접속할 때마다 확인이 필요하다.)"""
-        language = Select(self.driver.find_element(*self.LANGUAGE_SELECT))
+        # 폼보다 푸터(드롭다운)가 늦게 렌더링될 수 있어 명시적 대기 사용
+        language = Select(
+            self.wait.until(EC.presence_of_element_located(self.LANGUAGE_SELECT))
+        )
         if language.first_selected_option.get_attribute("value") != "ko-KR":
             language.select_by_value("ko-KR")
             self.wait.until(EC.presence_of_element_located(self.KOREAN_MARKER))
@@ -292,6 +295,14 @@ class LoginUiPage:
 
     def focused_validation(self):
         """브라우저 기본 검증(required)이 지목한 입력칸 name과 안내문구를 반환."""
+        # 클릭 직후 브라우저가 빈 칸으로 포커스를 옮길 때까지 대기
+        # (제한시간 안에 안 옮겨지면 그 시점의 상태를 반환해 assert가 판정)
+        try:
+            self.wait.until(
+                lambda d: d.switch_to.active_element.get_attribute("name")
+            )
+        except TimeoutException:
+            pass
         focused = self.driver.switch_to.active_element
         field = focused.get_attribute("name")
         msg = focused.get_attribute("validationMessage")

@@ -32,8 +32,9 @@ def page(shared_driver, credentials):
 
 
 @pytest.fixture
-def logged_in_driver(driver, credentials):
-    """로그인이 완료된 브라우저를 제공 (TID 23, 24 세션 유지 테스트용)."""
+def login_ui_driver(driver, credentials):
+    """LoginUiPage 흐름으로 로그인이 완료된 브라우저 (TID 23, 24 세션 유지 테스트용).
+    conftest의 logged_in_driver(팀 공통 로그인)와 다른 파일 전용 픽스처라 이름을 구분한다."""
     login(driver, credentials["url"], credentials["email"], credentials["password"])
     return driver
 
@@ -49,17 +50,17 @@ def test_tid41_login_success(driver, credentials):
     assert MainPage(driver).profile_icon().is_displayed()
 
 
-def test_tid23_back_button_keeps_login(logged_in_driver):
+def test_tid23_back_button_keeps_login(login_ui_driver):
     """TID 23: 로그인 완료 후 뒤로가기 -> 로그인 상태 유지 (로그인 페이지로 안 감)"""
-    logged_in_driver.back()
-    icon = MainPage(logged_in_driver).wait_logged_in()
+    login_ui_driver.back()
+    icon = MainPage(login_ui_driver).wait_logged_in()
     assert icon.is_displayed(), "[TID 23] 뒤로가기 후 프로필 아이콘이 사라짐 (로그인 풀림)"
 
 
-def test_tid24_refresh_keeps_login(logged_in_driver):
+def test_tid24_refresh_keeps_login(login_ui_driver):
     """TID 24: 로그인 완료 후 새로고침(F5) -> 로그인 상태 유지"""
-    logged_in_driver.refresh()
-    icon = MainPage(logged_in_driver).wait_logged_in()
+    login_ui_driver.refresh()
+    icon = MainPage(login_ui_driver).wait_logged_in()
     log.info("새로고침 후 프로필 아이콘 표시: %s", icon.is_displayed())
     assert icon.is_displayed(), "[TID 24] 새로고침 후 프로필 아이콘이 사라짐 (로그인 풀림)"
 
@@ -177,39 +178,38 @@ def test_tid6_email_special_char(page, credentials):
 # ══════════════════════════════════════════════════════════════
 
 
-def test_tid12_email_too_long(page, credentials):
-    """TID 12: 이메일 128자 이상 -> 서버 오류 안내 (예기치 못한 문제가 발생하였습니다)"""
-    long_email = ("a" * 120) + "@elicer.com"  # 131자
-    msg = page.expect_error(long_email, credentials["password"], MSG_SERVER_ERROR)
-    assert MSG_SERVER_ERROR in msg, f"[TID 12] 실제 화면 문구: '{msg}'"
-
-
-def test_tid13_nonexistent_email(page, credentials):
-    """TID 13: 존재하지 않는 이메일 -> 불일치 안내문구"""
-    msg = page.expect_error(
-        "no_such_user_9999@elicer.com", credentials["password"], MSG_MISMATCH
-    )
-    assert MSG_MISMATCH in msg, f"[TID 13] 실제 화면 문구: '{msg}'"
-
-
-def test_tid14_wrong_password(page, credentials):
-    """TID 14: 일치하지 않는 비밀번호 -> 불일치 안내문구"""
-    msg = page.expect_error(
-        credentials["email"], "definitely_wrong_pw_123", MSG_MISMATCH
-    )
-    assert MSG_MISMATCH in msg, f"[TID 14] 실제 화면 문구: '{msg}'"
-
-
-def test_tid15_password_too_long(page, credentials):
-    """TID 15: 비밀번호 128자 이상 -> 불일치 안내문구"""
-    msg = page.expect_error(credentials["email"], "A" * 130, MSG_MISMATCH)
-    assert MSG_MISMATCH in msg, f"[TID 15] 실제 화면 문구: '{msg}'"
-
-
-def test_tid16_password_too_short(page, credentials):
-    """TID 16: 비밀번호 7자 이하 -> 최소 8자리 안내"""
-    msg = page.expect_error(credentials["email"], "abc123", MSG_PW_MIN_LENGTH)
-    assert MSG_PW_MIN_LENGTH in msg, f"[TID 16] 실제 화면 문구: '{msg}'"
+@pytest.mark.parametrize(
+    "tid, email, password, expected_msg",
+    [
+        # email/password가 None이면 정상 계정값(.env)을 사용한다.
+        pytest.param(
+            12, ("a" * 120) + "@elicer.com", None, MSG_SERVER_ERROR,
+            id="TID12-email-too-long",
+        ),
+        pytest.param(
+            13, "no_such_user_9999@elicer.com", None, MSG_MISMATCH,
+            id="TID13-nonexistent-email",
+        ),
+        pytest.param(
+            14, None, "definitely_wrong_pw_123", MSG_MISMATCH,
+            id="TID14-wrong-password",
+        ),
+        pytest.param(
+            15, None, "A" * 130, MSG_MISMATCH,
+            id="TID15-password-too-long",
+        ),
+        pytest.param(
+            16, None, "abc123", MSG_PW_MIN_LENGTH,
+            id="TID16-password-too-short",
+        ),
+    ],
+)
+def test_login_server_validation(page, credentials, tid, email, password, expected_msg):
+    """TID 12~16: 서버 검증 실패 입력 -> 각 상황에 맞는 안내 문구 노출"""
+    email = email if email is not None else credentials["email"]
+    password = password if password is not None else credentials["password"]
+    msg = page.expect_error(email, password, expected_msg)
+    assert expected_msg in msg, f"[TID {tid}] 실제 화면 문구: '{msg}'"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -240,34 +240,37 @@ def test_tid27_page_refresh(page):
 # ══════════════════════════════════════════════════════════════
 
 
-def test_tid30_email_placeholder(page):
-    """TID 30: 이메일 입력창 placeholder '이메일' 노출"""
-    placeholder = page.email_placeholder()
-    log.info("이메일 placeholder: '%s'", placeholder)
-    assert placeholder == "이메일", f"[TID 30] 실제 placeholder: '{placeholder}'"
+@pytest.mark.parametrize(
+    "tid, field, expected_placeholder",
+    [
+        pytest.param(30, "email", "이메일", id="TID30-email-placeholder"),
+        pytest.param(32, "password", "비밀번호", id="TID32-password-placeholder"),
+    ],
+)
+def test_input_placeholder(page, tid, field, expected_placeholder):
+    """TID 30/32: 입력창 placeholder 문구 노출"""
+    placeholder = getattr(page, f"{field}_placeholder")()
+    log.info("%s placeholder: '%s'", field, placeholder)
+    assert placeholder == expected_placeholder, (
+        f"[TID {tid}] 실제 placeholder: '{placeholder}'"
+    )
 
 
-def test_tid31_email_click_focus(page):
-    """TID 31: 이메일 입력창 클릭 -> 활성화(포커스)"""
-    page.email_input().click()
+@pytest.mark.parametrize(
+    "tid, field, expected_name",
+    [
+        pytest.param(31, "email", "loginId", id="TID31-email-click-focus"),
+        pytest.param(33, "password", "password", id="TID33-password-click-focus"),
+    ],
+)
+def test_input_click_focus(page, tid, field, expected_name):
+    """TID 31/33: 입력창 클릭 -> 활성화(포커스)"""
+    getattr(page, f"{field}_input")().click()
     name = page.focused_name()
     log.info("클릭 후 포커스된 칸: %s", name)
-    assert name == "loginId", f"[TID 31] 클릭 후 포커스된 칸: {name} (기대: loginId)"
-
-
-def test_tid32_password_placeholder(page):
-    """TID 32: 비밀번호 입력창 placeholder '비밀번호' 노출"""
-    placeholder = page.password_placeholder()
-    log.info("비밀번호 placeholder: '%s'", placeholder)
-    assert placeholder == "비밀번호", f"[TID 32] 실제 placeholder: '{placeholder}'"
-
-
-def test_tid33_password_click_focus(page):
-    """TID 33: 비밀번호 입력창 클릭 -> 활성화(포커스)"""
-    page.password_input().click()
-    name = page.focused_name()
-    log.info("클릭 후 포커스된 칸: %s", name)
-    assert name == "password", f"[TID 33] 클릭 후 포커스된 칸: {name} (기대: password)"
+    assert name == expected_name, (
+        f"[TID {tid}] 클릭 후 포커스된 칸: {name} (기대: {expected_name})"
+    )
 
 
 def test_tid36_password_masking_toggle(page):
