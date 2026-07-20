@@ -29,12 +29,21 @@ def test_history_can_be_deleted(history_page):
     print("[PASS] 히스토리 1개 삭제 완료")
 
 
-def test_delete_histories_by_count(history_page):
+@pytest.mark.history_bulk_delete
+def test_delete_histories_by_count(history_page, request):
     """화면에 표시된 히스토리를 지정된 개수만큼 삭제하고 결과를 검증합니다."""
-    # CI에서는 환경변수를 사용하고, 로컬 수동 실행에서는 사용자 입력을 허용합니다.
+    # 환경변수를 우선 사용하고, 대화형 옵션을 지정한 경우에만 사용자 입력을 받습니다.
     raw_count = os.getenv("HISTORY_DELETE_COUNT")
-    if raw_count is None:
+    if raw_count is None and request.config.getoption(
+        "--interactive-history-delete"
+    ):
         raw_count = input("삭제할 히스토리 개수를 입력하세요: ").strip()
+
+    # collection 단계에서도 skip하지만 직접 호출되는 상황을 대비해 한 번 더 보호합니다.
+    if raw_count is None:
+        pytest.skip(
+            "삭제 개수 또는 대화형 입력 옵션이 없어 다중 삭제 테스트를 건너뜁니다."
+        )
 
     # 잘못된 값으로 예상하지 않은 항목이 삭제되는 것을 막습니다.
     try:

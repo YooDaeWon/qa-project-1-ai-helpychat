@@ -127,26 +127,30 @@ python -m pytest tests/test_history/test_history_delete.py::test_history_can_be_
 
 ### 5.4. 삭제 개수를 직접 입력하는 다중 삭제 테스트
 
-> 주의: 현재 화면에 표시된 일반 대화와 자동화 대화를 합쳐 위에서부터 입력한 개수만큼 삭제합니다.
+`--interactive-history-delete` 옵션을 사용하면 테스트 실행 중 삭제할 개수를 직접 입력할 수 있습니다.
 
 ```powershell
-python -m pytest tests/test_history/test_history_delete.py::test_delete_histories_by_count -v -s --tb=long
+python -m pytest tests/test_history/test_history_delete.py::test_delete_histories_by_count -v -s --tb=long --interactive-history-delete
 ```
 
 ### 5.5. 삭제 개수를 미리 지정하는 다중 삭제 테스트
 
 다음 예시는 화면 위에서부터 히스토리 3개를 삭제합니다.
 
+> 주의: 현재 화면에 표시된 일반 대화와 자동화 대화를 합쳐 위에서부터 지정한 개수만큼 삭제합니다.
+
 ```powershell
 $env:HISTORY_DELETE_COUNT="3"
 python -m pytest tests/test_history/test_history_delete.py::test_delete_histories_by_count -v -s --tb=long
+Remove-Item Env:HISTORY_DELETE_COUNT
 ```
 
 ### 5.6. 히스토리 테스트 전체 실행
 
-다중 삭제 테스트가 입력을 기다리지 않도록 삭제 개수를 미리 지정합니다.
+`HISTORY_DELETE_COUNT`와 `--interactive-history-delete`를 지정하지 않으면 다중 삭제 테스트는
+입력을 기다리지 않고 자동으로 건너뛰며, 나머지 테스트는 정상 실행됩니다.
 
 ```powershell
-$env:HISTORY_DELETE_COUNT="1"
+Remove-Item Env:HISTORY_DELETE_COUNT -ErrorAction SilentlyContinue
 python -m pytest tests/test_history -v -s --tb=long
 ```

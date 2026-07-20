@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import time
 from datetime import datetime
 
@@ -39,6 +40,33 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=False,
         help="Chrome을 headless 모드로 실행합니다.",
     )
+    parser.addoption(
+        "--interactive-history-delete",
+        action="store_true",
+        default=False,
+        help="다중 삭제 테스트 실행 중 삭제할 히스토리 개수를 직접 입력합니다.",
+    )
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config,
+    items: list[pytest.Item],
+) -> None:
+    """삭제 개수가 없는 전체 실행에서는 다중 삭제 테스트를 미리 건너뜁니다."""
+    has_delete_count = os.getenv("HISTORY_DELETE_COUNT") is not None
+    interactive = bool(config.getoption("--interactive-history-delete"))
+    if has_delete_count or interactive:
+        return
+
+    skip_bulk_delete = pytest.mark.skip(
+        reason=(
+            "HISTORY_DELETE_COUNT 또는 --interactive-history-delete가 없어 "
+            "다중 삭제 테스트를 건너뜁니다."
+        )
+    )
+    for item in items:
+        if "history_bulk_delete" in item.keywords:
+            item.add_marker(skip_bulk_delete)
 
 
 @pytest.fixture(scope="session")
