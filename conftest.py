@@ -185,7 +185,9 @@ def _reset_shared_driver(request: pytest.FixtureRequest) -> None:
         if report is not None and report.failed:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             screenshot_path = (
-                settings.artifacts_dir / "failures" / f"{request.node.name}_{timestamp}.png"
+                settings.artifacts_dir
+                / "failures"
+                / f"{request.node.name}_{timestamp}.png"
             )
             try:
                 drv.save_screenshot(str(screenshot_path))
@@ -209,3 +211,57 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
     outcome = yield
     report = outcome.get_result()
     setattr(item, f"rep_{report.when}", report)
+
+
+# ==============================================================================
+# test008 등 단일 브라우저 유지가 필요한 테스트용 추가 픽스처
+# (이름을 다르게 지정했으므로 기존 팀원들의 테스트 코드와 충돌하지 않습니다)
+# ==============================================================================
+import re
+from pathlib import Path
+from datetime import datetime
+import time
+
+
+@pytest.fixture(scope="module")
+def module_driver(request: pytest.FixtureRequest) -> webdriver.Chrome:
+    headless = bool(request.config.getoption("--headless"))
+    browser = get_driver(headless=headless)
+    yield browser
+    time.sleep(3)
+    browser.quit()
+
+
+@pytest.fixture(scope="module")
+def module_setup_and_login(module_driver: webdriver.Chrome) -> webdriver.Chrome:
+    module_driver.get(LOGIN_URL)
+    module_driver.delete_all_cookies()
+    module_driver.execute_script(
+        "window.localStorage.clear(); window.sessionStorage.clear();"
+    )
+    LoginPage(module_driver).login()
+    yield module_driver
+
+
+@pytest.fixture(autouse=True)
+def _test008_screenshot(request: pytest.FixtureRequest) -> None:
+    uses_module = "module_setup_and_login" in request.fixturenames
+    yield
+    if uses_module:
+        settings = request.getfixturevalue("settings")
+        drv = request.getfixturevalue("module_setup_and_login")
+        report = getattr(request.node, "rep_call", None)
+
+        if report is not None and report.failed:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            safe_node_name = re.sub(r'[\\/*?:"<>|]', "_", request.node.name)
+            screenshot_path = (
+                settings.artifacts_dir
+                / "failures"
+                / f"{safe_node_name}_{timestamp}.png"
+            )
+            try:
+                screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+                drv.save_screenshot(str(screenshot_path))
+            except Exception:
+                pass
