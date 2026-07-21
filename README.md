@@ -107,6 +107,12 @@ python -m pytest tests/login/test_login_pj.py --log-cli-level=INFO --html=report
 
 ### 4.4. 실행 결과 예시
 
+아래 명령어로 TID 14(비밀번호 불일치) 케이스를 실행한 결과입니다.
+
+```powershell
+python -m pytest tests/login -k "TID14" --log-cli-level=INFO
+```
+
 ```text
 tests/login/test_login_pj.py::test_login_server_validation[TID14-wrong-password]
 -------------------------------- live log call --------------------------------
