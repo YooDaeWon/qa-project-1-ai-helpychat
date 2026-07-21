@@ -34,6 +34,15 @@ LOGIN_EMAIL = os.getenv("LOGIN_EMAIL", "").strip()
 LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "").strip()
 WAIT_TIME = DEFAULT_WAIT_TIME
 
+# ------------------------------------------------------------------
+# [신규 추가] AI 응답 SLA 타임아웃
+# - test001~008 자동화 테스트 공통: AI 답변 대기시간이 이 값(초)을
+#   초과하면 Fail 처리하기 위한 기준값입니다.
+# - 기존 상수는 하나도 수정하지 않았으므로 다른 팀원의 테스트에는
+#   영향을 주지 않습니다 (순수 추가).
+# ------------------------------------------------------------------
+AI_RESPONSE_TIMEOUT = 60
+
 # History test compatibility values.
 BASE_URL = LOGIN_URL
 DEFAULT_TIMEOUT = 90
