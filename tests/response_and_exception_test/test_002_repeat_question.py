@@ -9,7 +9,7 @@ REPEAT_COUNT = 10
 
 
 def validate_answer(answer: str):
-    """응답 검증 로직"""
+    """응답 검증 로직 (숫자 및 한글 정답 지원)"""
 
     if not answer:
         return False
@@ -27,10 +27,20 @@ def validate_answer(answer: str):
     if any(keyword in answer for keyword in error_keywords):
         return False
 
-    # 쉼표 제거 후 정답 값 검증
+    # 1. 쉼표 제거 후 숫자 정답 값 검증
     normalized_answer = answer.replace(",", "")
+    if EXPECTED_ANSWER in normalized_answer:
+        return True
 
-    return EXPECTED_ANSWER in normalized_answer
+    # 2. [추가] 한글 정답 검증 (띄어쓰기 변형 포함 방어)
+    # AI가 "이천칠백", "이천 칠백" 등으로 답변할 경우 대비
+    answer_no_space = answer.replace(" ", "")
+    korean_expected_keywords = ["이천칠백"]
+
+    if any(korean in answer_no_space for korean in korean_expected_keywords):
+        return True
+
+    return False
 
 
 def test_repeat_question(setup_and_login):
