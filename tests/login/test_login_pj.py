@@ -50,17 +50,18 @@ def test_tid41_login_success(driver, credentials):
     assert MainPage(driver).profile_icon().is_displayed()
 
 
-def test_tid23_back_button_keeps_login(login_ui_driver):
+def test_tid23_back_button_keeps_login(login_ui_driver, credentials):
     """TID 23: 로그인 완료 후 뒤로가기 -> 로그인 상태 유지 (로그인 페이지로 안 감)"""
     login_ui_driver.back()
-    icon = MainPage(login_ui_driver).wait_logged_in()
+    # 앱 도메인 확인 포함 (PersonIcon은 로그인 페이지 아바타와 겹쳐 단독 판정 불가)
+    icon = MainPage(login_ui_driver).wait_logged_in(credentials["url"])
     assert icon.is_displayed(), "[TID 23] 뒤로가기 후 프로필 아이콘이 사라짐 (로그인 풀림)"
 
 
-def test_tid24_refresh_keeps_login(login_ui_driver):
+def test_tid24_refresh_keeps_login(login_ui_driver, credentials):
     """TID 24: 로그인 완료 후 새로고침(F5) -> 로그인 상태 유지"""
     login_ui_driver.refresh()
-    icon = MainPage(login_ui_driver).wait_logged_in()
+    icon = MainPage(login_ui_driver).wait_logged_in(credentials["url"])
     log.info("새로고침 후 프로필 아이콘 표시: %s", icon.is_displayed())
     assert icon.is_displayed(), "[TID 24] 새로고침 후 프로필 아이콘이 사라짐 (로그인 풀림)"
 

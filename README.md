@@ -74,20 +74,29 @@ python -m pytest -s -v tests/agent_management/test_delete_agents.py --delete-mod
 - 접속 시 영문 페이지로 리다이렉트되므로 언어 드롭다운에서 한국어로 전환한 뒤 검증합니다.
 - `--log-cli-level=INFO` 옵션을 사용하면 화면 문구, 브라우저 말풍선, placeholder 등의 실제 확인 값이 출력됩니다.
 - 해당 옵션을 생략하면 로그 없이 실행됩니다.
-- 테스트 실패 시 assert 메시지에 기대값과 실제값이 함께 표시됩니다.
+- 테스트 실패 시 assert 메시지에 기대값과 실제값이 함께 표시되고,
+  실패 순간의 화면이 `artifacts/failures/` 폴더에 자동 저장됩니다.
 
 ### 4.1. 로그인 테스트 전체 실행
 
+`login` 마커가 등록되어 있어 경로 대신 마커로 실행할 수 있습니다.
+
 ```powershell
-python -m pytest tests/login/test_login_pj.py --log-cli-level=INFO
+python -m pytest -m login --log-cli-level=INFO
 ```
 
 ### 4.2. 특정 로그인 테스트 실행
 
-테스트 함수명에 지정된 TID를 사용합니다.
+단독 함수로 작성된 테스트는 함수명의 TID를 사용합니다.
 
 ```powershell
 python -m pytest tests/login/test_login_pj.py::test_tid41_login_success --log-cli-level=INFO
+```
+
+파라미터화된 테스트(TID 12\~16, 30\~33 등)는 `-k` 옵션으로 TID를 지정합니다.
+
+```powershell
+python -m pytest tests/login -k "TID13" --log-cli-level=INFO
 ```
 
 ### 4.3. HTML 리포트 생성
@@ -98,10 +107,16 @@ python -m pytest tests/login/test_login_pj.py --log-cli-level=INFO --html=report
 
 ### 4.4. 실행 결과 예시
 
+아래 명령어로 TID 14(비밀번호 불일치) 케이스를 실행한 결과입니다.
+
+```powershell
+python -m pytest tests/login -k "TID14" --log-cli-level=INFO
+```
+
 ```text
-tests/login/test_login_pj.py::test_tid14_wrong_password
------------------------------- live log call ------------------------------
-INFO  화면 문구: '이메일 또는 비밀번호가 일치하지 않습니다.'
+tests/login/test_login_pj.py::test_login_server_validation[TID14-wrong-password]
+-------------------------------- live log call --------------------------------
+INFO     src.pages.login_page:login_page.py:286 화면 문구: '이메일 또는 비밀번호가 일치하지 않습니다.'
 PASSED
 ```
 
@@ -148,7 +163,7 @@ python -m pytest tests/response_and_exception_test/test_004_plus_button.py -v -s
 python -m pytest tests/response_and_exception_test/test_005_large_input_length.py -v -s
 ```
 
-자동화 환경에서 대용량 문자 입력 처리 시 입력 처 및 질문이 전송되며 AI가 답변합니다.
+자동화 환경에서 대용량 문자 입력 처리 시 입력 처리 및 질문이 전송되며 AI가 답변합니다.
 
 ### 5.6. AI 대화 문맥 유지 및 기억력 검증 테스트
 

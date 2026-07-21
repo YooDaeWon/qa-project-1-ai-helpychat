@@ -167,7 +167,11 @@ def _reset_shared_driver(request: pytest.FixtureRequest) -> None:
     """shared_driver를 사용하는 테스트의 세션을 초기화하고,
     실패 시 driver fixture와 동일하게 실패 화면을 저장합니다."""
     uses_shared = "shared_driver" in request.fixturenames
+    settings = None
     if uses_shared:
+        # teardown에서 fixture를 새로 요청하면 pytest 10부터 에러가 되므로
+        # setup 단계에서 미리 확보해 둔다.
+        settings = request.getfixturevalue("settings")
         drv = request.getfixturevalue("shared_driver")
         drv.delete_all_cookies()
         drv.execute_script(
@@ -179,7 +183,6 @@ def _reset_shared_driver(request: pytest.FixtureRequest) -> None:
     if uses_shared:
         report = getattr(request.node, "rep_call", None)
         if report is not None and report.failed:
-            settings = request.getfixturevalue("settings")
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             screenshot_path = (
                 settings.artifacts_dir / "failures" / f"{request.node.name}_{timestamp}.png"
