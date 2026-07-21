@@ -90,21 +90,24 @@ class ChatPage:
             return ""
         return responses[-1].text.strip()
 
-    def wait_and_retry_response(self, question):
-        """
-        [POM 추가] 빠른 정상 응답은 즉시 진행하고, 일시적인 응답 누락 시 1회 재전송합니다.
-        """
-        for timeout in (10, 30):
-            try:
-                self.wait_response_complete(timeout=timeout)
-                if self.get_last_response().strip():
-                    return
-            except Exception:
-                print(f"응답 대기 실패(timeout={timeout}초) → 재시도")
-        print("최종 응답 없음 → 질문 재전송")
-        self.input_question(question)
-        self.click_send_button()
-        self.wait_response_complete(timeout=AI_RESPONSE_TIMEOUT)
+    # ▶ [추가된 부분] 가장 마지막 응답의 <a> 태그 href 속성값들을 리스트로 반환하는 메서드
+    def get_last_response_links(self):
+        responses = self.driver.find_elements(
+            By.CSS_SELECTOR, "div[data-status='complete']"
+        )
+        if not responses:
+            return []
+
+        # 마지막 응답 요소 가져오기
+        last_response_element = responses[-1]
+
+        # 마지막 응답 내부의 모든 <a> 태그 찾기
+        a_tags = last_response_element.find_elements(By.TAG_NAME, "a")
+
+        # href 속성이 존재하는 태그들의 URL만 리스트로 반환
+        return [
+            tag.get_attribute("href") for tag in a_tags if tag.get_attribute("href")
+        ]
 
     # ======================================================
     # TC004 이미지 생성 / 파일 업로드

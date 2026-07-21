@@ -246,15 +246,26 @@ def module_setup_and_login(module_driver: webdriver.Chrome) -> webdriver.Chrome:
 @pytest.fixture(autouse=True)
 def _test008_screenshot(request: pytest.FixtureRequest) -> None:
     uses_module = "module_setup_and_login" in request.fixturenames
-    yield
+
+    # teardown에서 fixture를 새로 요청하면 pytest 최신 버전에서 에러가 되므로
+    # setup 단계(yield 이전)에서 미리 확보해 둡니다.
+    settings = None
+    drv = None
     if uses_module:
         settings = request.getfixturevalue("settings")
         drv = request.getfixturevalue("module_setup_and_login")
+
+    yield
+
+    if uses_module:
+        # 오타 수정: repcall -> rep_call
         report = getattr(request.node, "rep_call", None)
 
         if report is not None and report.failed:
+            # 파일명 가독성을 위해 기존의 시간 포맷과 언더바(_) 형식 유지
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             safe_node_name = re.sub(r'[\\/*?:"<>|]', "_", request.node.name)
+
             screenshot_path = (
                 settings.artifacts_dir
                 / "failures"
