@@ -108,9 +108,9 @@ python -m pytest tests/login/test_login_pj.py --log-cli-level=INFO --html=report
 ### 4.4. 실행 결과 예시
 
 ```text
-tests/login/test_login_pj.py::test_tid14_wrong_password
------------------------------- live log call ------------------------------
-INFO  화면 문구: '이메일 또는 비밀번호가 일치하지 않습니다.'
+tests/login/test_login_pj.py::test_login_server_validation[TID14-wrong-password]
+-------------------------------- live log call --------------------------------
+INFO     src.pages.login_page:login_page.py:286 화면 문구: '이메일 또는 비밀번호가 일치하지 않습니다.'
 PASSED
 ```
 
