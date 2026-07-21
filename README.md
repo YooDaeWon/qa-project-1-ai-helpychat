@@ -93,7 +93,7 @@ python -m pytest -m login --log-cli-level=INFO
 python -m pytest tests/login/test_login_pj.py::test_tid41_login_success --log-cli-level=INFO
 ```
 
-파라미터화된 테스트(TID 12~16, 30~33 등)는 `-k` 옵션으로 TID를 지정합니다.
+파라미터화된 테스트(TID 12\~16, 30\~33 등)는 `-k` 옵션으로 TID를 지정합니다.
 
 ```powershell
 python -m pytest tests/login -k "TID13" --log-cli-level=INFO
