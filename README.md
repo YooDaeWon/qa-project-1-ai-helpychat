@@ -125,13 +125,13 @@ PASSED
 
 테스트 코드 폴더 : tests/response_and_exception_test
 
-### 5.1. 한글, 영문, 숫자, 한·영·숫자 혼합 입력 검증 테스트
+### 5.1. 한글, 영문, 일본어, 태국어, 숫자, 한·영·일본어·태국어·숫자 혼합 입력 검증 테스트
 
 ```powershell
 python -m pytest tests/response_and_exception_test/test_001_input_mix.py -v -s
 ```
 
-입력한 값들이 정상적으로 입력되며, 질문 전송 및 AI 답변이 출력됩니다.
+입력한 값들이 입력창에 입력되며, 질문 전송 및 AI 답변이 출력됩니다.
 
 ### 5.2. 동일한 반복 질문 10회 이상 질의응답 시 AI 답변 테스트
 

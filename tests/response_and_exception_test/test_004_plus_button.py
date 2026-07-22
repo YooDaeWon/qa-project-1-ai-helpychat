@@ -49,8 +49,9 @@ def test_plus_button_features(setup_and_login):
         if data["type"] != "file":
             chat.input_question(data["question"])
 
+        before_count = chat.response_count()
         chat.click_send_button()
-        chat.wait_response_complete()
+        chat.wait_response_complete(before_count)
 
         # 4) 결과 검증
         if data["type"] == "image":

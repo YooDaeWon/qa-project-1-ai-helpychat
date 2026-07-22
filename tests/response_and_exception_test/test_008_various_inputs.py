@@ -92,11 +92,12 @@ def test_exception_handling(module_setup_and_login, case):
     )
 
     # 2. 질문 전송
+    before_count = chat.response_count()
     chat.click_send_button()
 
     # 3. 응답 대기
     try:
-        chat.wait_response_complete()
+        chat.wait_response_complete(before_count)
     except TimeoutException:
         pytest.fail(
             f"[{name}] 3단계 실패 - [TIMEOUT] AI 응답 로딩이 1분(SLA)을 초과했습니다."
