@@ -43,10 +43,11 @@ def test_context_retention(setup_and_login):
         print(f"\n▶ 질문 {i + 1}: {question}")
 
         chat.input_question(question)
+        before_count = chat.response_count()
         chat.click_send_button()
 
         # AI 응답 완료까지 대기 (config.py의 AI_RESPONSE_TIMEOUT 적용)
-        chat.wait_response_complete()
+        chat.wait_response_complete(before_count)
 
         response = chat.get_last_response()
 

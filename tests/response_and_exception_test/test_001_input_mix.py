@@ -50,10 +50,11 @@ def test_001_chat_input_types(setup_and_login):
         )
 
         # 3. 질문 전송
+        before_count = chat.response_count()
         chat.send_by_enter()
 
         # 4. AI 응답 대기
-        chat.wait_response_complete()
+        chat.wait_response_complete(before_count)
 
         # 5. AI 응답 검증
         ai_answer = chat.get_last_response()

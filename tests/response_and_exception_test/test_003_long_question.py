@@ -59,8 +59,9 @@ def test_003_long_question(setup_and_login):
         print(f"  [✓] {actual_length}자 입력 확인")
 
         # 전송 및 응답 대기
+        before_count = chat.response_count()
         chat.click_send_button()
-        chat.wait_response_complete()
+        chat.wait_response_complete(before_count)
 
         # 응답 검증
         answer = chat.get_last_response()

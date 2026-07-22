@@ -57,10 +57,11 @@ def test_repeat_question(setup_and_login):
         print(f"\n[{i + 1}/{REPEAT_COUNT}] 질문 전송 중...")
 
         chat.input_question(QUESTION)
+        before_count = chat.response_count()
         chat.click_send_button()
 
         # AI 응답 완료 대기
-        chat.wait_response_complete()
+        chat.wait_response_complete(before_count)
 
         # 마지막 응답 가져오기
         answer = chat.get_last_response()
