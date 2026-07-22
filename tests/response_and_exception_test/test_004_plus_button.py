@@ -4,7 +4,10 @@ from src.pages.chat_page import ChatPage
 
 # 테스트 데이터: 지정하신 폴더명과 확장자 적용
 TEST_DATA = {
-    "이미지 생성": {"type": "image", "question": "강아지 일러스트 생성해줘."},
+    "이미지 생성": {
+        "type": "image",
+        "question": "단순한 사과 모양의 미니멀한 빨간색 벡터 아이콘, 하얀색 배경",
+    },
     "웹 검색": {
         "type": "web",
         "question": "이번 주 넷플릭스 대한민국 TOP 10 영화 1위가 뭐야? 간략하게 말해줘",
