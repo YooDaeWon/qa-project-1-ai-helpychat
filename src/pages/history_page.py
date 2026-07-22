@@ -24,18 +24,18 @@ class HistoryPage(BasePage):
         (By.CSS_SELECTOR, "main"),
     ]
     CHAT_INPUTS = [
-        (By.CSS_SELECTOR, "textarea[placeholder*='硫붿떆吏']"),
-        (By.CSS_SELECTOR, "textarea[placeholder*='吏덈Ц']"),
+        (By.CSS_SELECTOR, "textarea[placeholder*='메시지']"),
+        (By.CSS_SELECTOR, "textarea[placeholder*='질문']"),
         (By.CSS_SELECTOR, "textarea"),
         (By.CSS_SELECTOR, "[contenteditable='true'][role='textbox']"),
         (By.CSS_SELECTOR, "[contenteditable='true']"),
     ]
     SEND_BUTTONS = [
         (By.CSS_SELECTOR, "button[type='submit']"),
-        (By.CSS_SELECTOR, "button[aria-label*='?꾩넚']"),
-        (By.CSS_SELECTOR, "button[aria-label*='蹂대궡湲?]"),
-        (By.CSS_SELECTOR, "button[title*='?꾩넚']"),
-        (By.CSS_SELECTOR, "button[title*='蹂대궡湲?]"),
+        (By.CSS_SELECTOR, "button[aria-label*='전송']"),
+        (By.CSS_SELECTOR, "button[aria-label*='보내기']"),
+        (By.CSS_SELECTOR, "button[title*='전송']"),
+        (By.CSS_SELECTOR, "button[title*='보내기']"),
     ]
 
     def open(self):
