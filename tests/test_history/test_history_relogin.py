@@ -1,5 +1,5 @@
 from src.core.login import login_if_needed
-from src.pages.login_page import MainPage
+from src.pages.main_page import MainPage
 from src.utils.history_data import unique_history_message
 
 

@@ -15,9 +15,9 @@ from src.pages.login_page import (
     MSG_PW_MIN_LENGTH,
     MSG_SERVER_ERROR,
     LoginUiPage,
-    MainPage,
     login,
 )
+from src.pages.main_page import MainPage
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ def page(shared_driver, credentials):
 @pytest.fixture
 def login_ui_driver(driver, credentials):
     """LoginUiPage 흐름으로 로그인이 완료된 브라우저 (TID 23, 24 세션 유지 테스트용).
-    conftest의 logged_in_driver(팀 공통 로그인)와 다른 파일 전용 픽스처라 이름을 구분한다."""
+    conftest의 팀 공통 로그인 픽스처(setup_and_login)와 다른 파일 전용 픽스처라 이름을 구분한다."""
     login(driver, credentials["url"], credentials["email"], credentials["password"])
     return driver
 
