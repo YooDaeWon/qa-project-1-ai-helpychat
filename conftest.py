@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-import time
+import re
 from datetime import datetime
 
 import pytest
@@ -17,6 +17,32 @@ from src.config.config import (
 from src.core.driver import get_driver
 from src.pages.history_page import HistoryPage
 from src.pages.login_page import LoginPage
+
+
+def _clear_session(driver: webdriver.Chrome) -> None:
+    """쿠키와 로컬/세션 스토리지를 비웁니다.
+    (아직 사이트에 접속 전이면 스토리지 접근이 막히므로 try로 감쌉니다.)"""
+    driver.delete_all_cookies()
+    driver.execute_script(
+        "try { window.localStorage.clear(); window.sessionStorage.clear(); } catch (e) {}"
+    )
+
+
+def _save_failure_screenshot(driver, node, settings) -> None:
+    """테스트가 실패한 경우에만 실패 화면을 artifacts/failures에 저장합니다.
+    파일명은 파라미터 케이스의 특수문자를 제거해 안전하게 만듭니다."""
+    report = getattr(node, "rep_call", None)
+    if report is None or not report.failed:
+        return
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_name = re.sub(r'[\\/*?:"<>|]', "_", node.name)
+    screenshot_path = settings.artifacts_dir / "failures" / f"{safe_name}_{timestamp}.png"
+    try:
+        screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+        driver.save_screenshot(str(screenshot_path))
+        print(f"실패 화면 저장 완료: {screenshot_path}")
+    except Exception as error:
+        print(f"실패 화면 저장 실패: {error}")
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -99,20 +125,8 @@ def driver(
 
     yield browser
 
-    report = getattr(request.node, "rep_call", None)
-    if report is not None and report.failed:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        screenshot_path = (
-            settings.artifacts_dir / "failures" / f"{request.node.name}_{timestamp}.png"
-        )
-        try:
-            browser.save_screenshot(str(screenshot_path))
-            print(f"실패 화면 저장 완료: {screenshot_path}")
-        except Exception as error:
-            print(f"실패 화면 저장 실패: {error}")
+    _save_failure_screenshot(browser, request.node, settings)
 
-    # 기존 팀 테스트의 브라우저 종료 전 대기를 유지합니다.
-    time.sleep(3)
     browser.quit()
 
 
@@ -124,9 +138,7 @@ def setup_and_login(driver: webdriver.Chrome) -> webdriver.Chrome:
     driver.get(LOGIN_URL)
 
     # 쿠키 및 스토리지 초기화 (유대원 브랜치 기능 반영)
-    driver.delete_all_cookies()
-    driver.execute_script("window.localStorage.clear();")
-    driver.execute_script("window.sessionStorage.clear();")
+    _clear_session(driver)
 
     # 로그인
     LoginPage(driver).login()
@@ -135,21 +147,9 @@ def setup_and_login(driver: webdriver.Chrome) -> webdriver.Chrome:
 
 
 @pytest.fixture
-def logged_in_driver(setup_and_login: webdriver.Chrome) -> webdriver.Chrome:
-    """이름이 명확한 로그인 완료 드라이버 별칭 fixture입니다."""
-    return setup_and_login
-
-
-@pytest.fixture
 def history_page(driver: webdriver.Chrome) -> HistoryPage:
     """히스토리 테스트용 Page Object fixture입니다."""
     return HistoryPage(driver)
-
-
-@pytest.fixture
-def login_page(driver: webdriver.Chrome) -> LoginPage:
-    """히스토리 재로그인 테스트에서 사용하는 로그인 Page Object fixture입니다."""
-    return LoginPage(driver)
 
 
 @pytest.fixture(scope="module")
@@ -168,32 +168,17 @@ def _reset_shared_driver(request: pytest.FixtureRequest) -> None:
     실패 시 driver fixture와 동일하게 실패 화면을 저장합니다."""
     uses_shared = "shared_driver" in request.fixturenames
     settings = None
+    drv = None
     if uses_shared:
-        # teardown에서 fixture를 새로 요청하면 pytest 10부터 에러가 되므로
-        # setup 단계에서 미리 확보해 둔다.
+        # teardown에서 fixture를 새로 요청하면 에러가 되므로 setup에서 미리 확보한다.
         settings = request.getfixturevalue("settings")
         drv = request.getfixturevalue("shared_driver")
-        drv.delete_all_cookies()
-        drv.execute_script(
-            "try { window.localStorage.clear(); window.sessionStorage.clear(); } catch (e) {}"
-        )
+        _clear_session(drv)
 
     yield
 
     if uses_shared:
-        report = getattr(request.node, "rep_call", None)
-        if report is not None and report.failed:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            screenshot_path = (
-                settings.artifacts_dir
-                / "failures"
-                / f"{request.node.name}_{timestamp}.png"
-            )
-            try:
-                drv.save_screenshot(str(screenshot_path))
-                print(f"실패 화면 저장 완료: {screenshot_path}")
-            except Exception as error:
-                print(f"실패 화면 저장 실패: {error}")
+        _save_failure_screenshot(drv, request.node, settings)
 
 
 @pytest.fixture(scope="session")
@@ -217,10 +202,6 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
 # test008 등 단일 브라우저 유지가 필요한 테스트용 추가 픽스처
 # (이름을 다르게 지정했으므로 기존 팀원들의 테스트 코드와 충돌하지 않습니다)
 # ==============================================================================
-import re
-from pathlib import Path
-from datetime import datetime
-import time
 
 
 @pytest.fixture(scope="module")
@@ -228,17 +209,13 @@ def module_driver(request: pytest.FixtureRequest) -> webdriver.Chrome:
     headless = bool(request.config.getoption("--headless"))
     browser = get_driver(headless=headless)
     yield browser
-    time.sleep(3)
     browser.quit()
 
 
 @pytest.fixture(scope="module")
 def module_setup_and_login(module_driver: webdriver.Chrome) -> webdriver.Chrome:
     module_driver.get(LOGIN_URL)
-    module_driver.delete_all_cookies()
-    module_driver.execute_script(
-        "window.localStorage.clear(); window.sessionStorage.clear();"
-    )
+    _clear_session(module_driver)
     LoginPage(module_driver).login()
     yield module_driver
 
@@ -247,8 +224,7 @@ def module_setup_and_login(module_driver: webdriver.Chrome) -> webdriver.Chrome:
 def _test008_screenshot(request: pytest.FixtureRequest) -> None:
     uses_module = "module_setup_and_login" in request.fixturenames
 
-    # teardown에서 fixture를 새로 요청하면 pytest 최신 버전에서 에러가 되므로
-    # setup 단계(yield 이전)에서 미리 확보해 둡니다.
+    # teardown에서 fixture를 새로 요청하면 에러가 되므로 setup에서 미리 확보한다.
     settings = None
     drv = None
     if uses_module:
@@ -258,21 +234,4 @@ def _test008_screenshot(request: pytest.FixtureRequest) -> None:
     yield
 
     if uses_module:
-        # 오타 수정: repcall -> rep_call
-        report = getattr(request.node, "rep_call", None)
-
-        if report is not None and report.failed:
-            # 파일명 가독성을 위해 기존의 시간 포맷과 언더바(_) 형식 유지
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            safe_node_name = re.sub(r'[\\/*?:"<>|]', "_", request.node.name)
-
-            screenshot_path = (
-                settings.artifacts_dir
-                / "failures"
-                / f"{safe_node_name}_{timestamp}.png"
-            )
-            try:
-                screenshot_path.parent.mkdir(parents=True, exist_ok=True)
-                drv.save_screenshot(str(screenshot_path))
-            except Exception:
-                pass
+        _save_failure_screenshot(drv, request.node, settings)
