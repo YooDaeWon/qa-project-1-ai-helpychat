@@ -123,12 +123,12 @@ PASSED
 
 ## 5. 입력창 입력값, 응답 영역 기본 기능 및 예외 질문 동작 / AI 답변 테스트
 
-테스트 코드 폴더 : tests/response_and_exception_test
+테스트 코드 폴더 : tests/response_exception
 
 ### 5.1. 한글, 영문, 일본어, 태국어, 숫자, 한·영·일본어·태국어·숫자 혼합 입력 검증 테스트
 
 ```powershell
-python -m pytest tests/response_and_exception_test/test_001_input_mix.py -v -s
+python -m pytest tests/response_exception/test_001_input_mix.py -v -s
 ```
 
 입력한 값들이 입력창에 입력되며, 질문 전송 및 AI 답변이 출력됩니다.
@@ -136,7 +136,7 @@ python -m pytest tests/response_and_exception_test/test_001_input_mix.py -v -s
 ### 5.2. 동일한 반복 질문 10회 이상 질의응답 시 AI 답변 테스트
 
 ```powershell
-python -m pytest tests/response_and_exception_test/test_002_repeat_question.py -v -s
+python -m pytest tests/response_exception/test_002_repeat_question.py -v -s
 ```
 
 동일한 질문을 10회 반복 요청 시 AI가 동일한 내용을 포함한 답변을 출력합니다.
@@ -144,7 +144,7 @@ python -m pytest tests/response_and_exception_test/test_002_repeat_question.py -
 ### 5.3. 긴 텍스트 입력 길이별 AI 응답 처리 검증 테스트
 
 ```powershell
-python -m pytest tests/response_and_exception_test/test_003_long_question.py -v -s
+python -m pytest tests/response_exception/test_003_long_question.py -v -s
 ```
 
 100자, 500자, 1000자 입력 시 질문이 입력 및 전송되며 AI가 답변합니다.
@@ -152,7 +152,7 @@ python -m pytest tests/response_and_exception_test/test_003_long_question.py -v 
 ### 5.4. 입력창 부가 기능(+ 버튼) 동작 검증 테스트
 
 ```powershell
-python -m pytest tests/response_and_exception_test/test_004_plus_button.py -v -s
+python -m pytest tests/response_exception/test_004_plus_button.py -v -s
 ```
 
 '+' 버튼의 이미지 생성, 웹 검색, 파일 업로드 기능을 활용하여 질문 시 AI가 답변합니다.
@@ -160,7 +160,7 @@ python -m pytest tests/response_and_exception_test/test_004_plus_button.py -v -s
 ### 5.5. 대용량 문자 입력 자동화 처리 안정성 테스트
 
 ```powershell
-python -m pytest tests/response_and_exception_test/test_005_large_input_length.py -v -s
+python -m pytest tests/response_exception/test_005_large_input_length.py -v -s
 ```
 
 자동화 환경에서 대용량 문자 입력 처리 시 입력 처리 및 질문이 전송되며 AI가 답변합니다.
@@ -168,7 +168,7 @@ python -m pytest tests/response_and_exception_test/test_005_large_input_length.p
 ### 5.6. AI 대화 문맥 유지 및 기억력 검증 테스트
 
 ```powershell
-python -m pytest tests/response_and_exception_test/test_006_context_maintenance.py -v -s
+python -m pytest tests/response_exception/test_006_context_maintenance.py -v -s
 ```
 
 이전 대화 내용을 기억하고 문맥을 유지하며, 질문 시 AI가 이를 기억하여 답변합니다.
@@ -176,7 +176,7 @@ python -m pytest tests/response_and_exception_test/test_006_context_maintenance.
 ### 5.7. "AI 헬피 추천 질문" 기능 동작 검증 테스트
 
 ```powershell
-python -m pytest tests/response_and_exception_test/test_007_recommend_question.py -v -s
+python -m pytest tests/response_exception/test_007_recommend_question.py -v -s
 ```
 
 AI 헬피 추천 질문을 선택하여 질문 시 AI가 질문을 확인하고 답변합니다.
@@ -184,7 +184,7 @@ AI 헬피 추천 질문을 선택하여 질문 시 AI가 질문을 확인하고 
 ### 5.8. 예외 및 특수 입력 처리 안정성 테스트
 
 ```powershell
-python -m pytest tests/response_and_exception_test/test_008_various_inputs.py -v -s
+python -m pytest tests/response_exception/test_008_various_inputs.py -v -s
 ```
 
 특수문자, 이모지, URL, 날짜 등 다양한 예외 입력을 인식하고 처리하며 AI가 답변합니다.
