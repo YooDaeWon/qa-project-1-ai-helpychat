@@ -20,7 +20,7 @@ FAILURE_PATTERNS = [
 # 예외/특수 입력 케이스 정의
 # ======================================================
 EXCEPTION_CASES = [
-    dict(name="특수문자 입력", question="!@#$%^&*()_+{}|:<>?~`"),
+    dict(name="특수문자 입력", question="!@#$%^&*()_+{}|:<>?~` 어떤문자 인가?"),
     dict(name="이모지 입력", question="😀🚀🌟🔥🎉"),
     dict(
         name="링크 요청 질문",
@@ -72,7 +72,7 @@ EXCEPTION_CASES = [
 )
 def test_exception_handling(module_setup_and_login, case):
     """
-    [TC_008] 예외/특수 형식 입력에 대한 입력~응답 파이프라인 검증
+    [TC_008] 예외/특수 형식 입력에 대한 입력/응답 테스트 검증
     """
 
     chat = ChatPage(module_setup_and_login)
