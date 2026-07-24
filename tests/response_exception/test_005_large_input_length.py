@@ -104,12 +104,13 @@ def test_large_text_input_stability(setup_and_login):
     # 5. 전송
     print("  [>] 보내기 버튼 클릭")
 
+    before_count = chat.response_count()
     chat.click_send_button()
 
     # 6. 응답 대기
     print("  [>] AI 응답 대기 중...")
 
-    chat.wait_response_complete()
+    chat.wait_response_complete(before_count)
 
     # 7. 응답 생성 여부 검증
     answer = chat.get_last_response()

@@ -35,7 +35,7 @@ class ChatPage:
             """
             self.driver.execute_script(js_code, textbox, text)
         else:
-            # [수정된 부분] \n 이 포함된 경우 Shift+Enter로 줄바꿈을 처리하도록 변경
+            # \n 이 포함된 경우 Shift+Enter로 줄바꿈을 처리하도록 변경
             lines = text.split("\n")
             for i, line in enumerate(lines):
                 if line:
@@ -66,16 +66,17 @@ class ChatPage:
     # ======================================================
     # 일반 응답
     # ======================================================
-    def wait_response_complete(self, timeout=AI_RESPONSE_TIMEOUT):
-        before = len(
+    def response_count(self):
+        """[추가됨] 현재 화면에 렌더링된 완료된 AI 응답 개수를 반환"""
+        return len(
             self.driver.find_elements(By.CSS_SELECTOR, "div[data-status='complete']")
         )
+
+    def wait_response_complete(self, previous_count, timeout=AI_RESPONSE_TIMEOUT):
+        """[수정됨] 이전 응답 개수(previous_count)보다 새 응답이 추가될 때까지 대기"""
         try:
             WebDriverWait(self.driver, timeout).until(
-                lambda d: (
-                    len(d.find_elements(By.CSS_SELECTOR, "div[data-status='complete']"))
-                    > before
-                )
+                lambda d: self.response_count() > previous_count
             )
         except TimeoutException:
             raise TimeoutException(
@@ -90,7 +91,7 @@ class ChatPage:
             return ""
         return responses[-1].text.strip()
 
-    # ▶ [추가된 부분] 가장 마지막 응답의 <a> 태그 href 속성값들을 리스트로 반환하는 메서드
+    # ▶ 가장 마지막 응답의 <a> 태그 href 속성값들을 리스트로 반환하는 메서드
     def get_last_response_links(self):
         responses = self.driver.find_elements(
             By.CSS_SELECTOR, "div[data-status='complete']"
@@ -193,6 +194,11 @@ class ChatPage:
         absolute_path = os.path.join(project_root, file_path)
         file_input = self.driver.find_element(By.CSS_SELECTOR, "input[type='file']")
         file_input.send_keys(absolute_path)
+
+    def scroll_to_bottom(self):
+        """[추가됨] 화면을 가장 아래로 스크롤합니다."""
+        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(0.5)  # 스크롤 후 UI가 자리잡을 여유 시간
 
     # ======================================================
     # TC007 추천 질문 (최종 보완본)

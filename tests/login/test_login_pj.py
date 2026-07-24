@@ -15,9 +15,9 @@ from src.pages.login_page import (
     MSG_PW_MIN_LENGTH,
     MSG_SERVER_ERROR,
     LoginUiPage,
-    MainPage,
     login,
 )
+from src.pages.main_page import MainPage
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ def page(shared_driver, credentials):
 @pytest.fixture
 def login_ui_driver(driver, credentials):
     """LoginUiPage 흐름으로 로그인이 완료된 브라우저 (TID 23, 24 세션 유지 테스트용).
-    conftest의 logged_in_driver(팀 공통 로그인)와 다른 파일 전용 픽스처라 이름을 구분한다."""
+    conftest의 팀 공통 로그인 픽스처(setup_and_login)와 다른 파일 전용 픽스처라 이름을 구분한다."""
     login(driver, credentials["url"], credentials["email"], credentials["password"])
     return driver
 
@@ -166,9 +166,7 @@ def test_email_format_error(page, credentials, tid, email_value):
 
 def test_tid6_email_special_char(page, credentials):
     """TID 6: 이메일 특수문자(#) 포함 -> 화면에 형식 오류 문구 (브라우저 말풍선은 없음)"""
-    msg = page.expect_error(
-        "qa6_project#06@elicer.com", credentials["password"], MSG_INVALID_FORMAT
-    )
+    msg = page.expect_error("qa6_project#06@elicer.com", credentials["password"])
     browser_msg = page.email_validation_message()
     log.info("브라우저 말풍선: '%s' (특수문자는 말풍선 없음)", browser_msg)
     assert MSG_INVALID_FORMAT in msg, f"[TID 6] 실제 화면 문구: '{msg}'"
@@ -183,9 +181,10 @@ def test_tid6_email_special_char(page, credentials):
     "tid, email, password, expected_msg",
     [
         # email/password가 None이면 정상 계정값(.env)을 사용한다.
+        # 명세상 이메일 상한은 256자. 이를 초과한 257자를 넣어 경계 밖 입력을 검증한다.
         pytest.param(
-            12, ("a" * 120) + "@elicer.com", None, MSG_SERVER_ERROR,
-            id="TID12-email-too-long",
+            12, ("a" * 246) + "@elicer.com", None, MSG_SERVER_ERROR,
+            id="TID12-email-over-256",
         ),
         pytest.param(
             13, "no_such_user_9999@elicer.com", None, MSG_MISMATCH,
@@ -209,7 +208,7 @@ def test_login_server_validation(page, credentials, tid, email, password, expect
     """TID 12~16: 서버 검증 실패 입력 -> 각 상황에 맞는 안내 문구 노출"""
     email = email if email is not None else credentials["email"]
     password = password if password is not None else credentials["password"]
-    msg = page.expect_error(email, password, expected_msg)
+    msg = page.expect_error(email, password)
     assert expected_msg in msg, f"[TID {tid}] 실제 화면 문구: '{msg}'"
 
 
