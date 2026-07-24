@@ -142,32 +142,156 @@ class HistoryPage(BasePage):
         self.driver.refresh()
         self.wait_until_ready()
 
-    def delete_history(self, key):
+    def delete_history(self, key, href=None):
         """히스토리를 삭제하고 사이드바에서 사라졌는지 확인합니다."""
-        item = self.wait_for_history(key)
-        self._open_history_menu(item, key)
-        delete_action = self._wait_action({"삭제", "delete"})
-        self._click_dom(delete_action)
+        WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
+            lambda _: self.first_visible(self.HISTORY_LISTS)
+        )
+        try:
+            before_count = WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
+                lambda _: self._history_target_count(key, href) or False
+            )
+        except TimeoutException as error:
+            raise RuntimeError(f"삭제할 히스토리를 찾지 못했습니다: {key}") from error
+
+        self._open_history_menu_and_click_delete(key, href)
         self._confirm_delete_if_needed()
 
-        # Reloading the deleted conversation URL can restore the stale active item.
-        # Return to the service root before reading the sidebar again.
-        self.driver.get(BASE_URL)
-        self.wait_until_ready()
-        WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
-            lambda _: not self.history_item(key)
+        # 삭제 요청이 완료되기 전에 다른 URL로 이동하면 브라우저가 요청을 취소할 수 있습니다.
+        # 현재 화면에서 대상 항목 수가 실제로 감소한 것을 먼저 확인합니다.
+        print(f"[WAIT] 삭제 반영 확인 중: {key}")
+        try:
+            WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
+                lambda _: self._history_target_count(key, href) < before_count
+            )
+        except TimeoutException as error:
+            raise RuntimeError(
+                f"삭제 버튼을 눌렀지만 히스토리가 목록에서 줄어들지 않았습니다: {key}"
+            ) from error
+        print(f"[DONE] 삭제 반영 완료: {key}")
+
+    def delete_history_at_index(self, index=0):
+        """현재 화면에서 지정한 순서의 히스토리 행을 삭제합니다."""
+        before_titles = self.history_titles()
+        rows = self._history_rows()
+        if index >= len(rows):
+            raise RuntimeError(
+                f"삭제할 히스토리 순서가 목록 범위를 벗어났습니다: {index}"
+            )
+
+        title = self.normalize(rows[index].text)
+        self._open_history_row_menu_and_click_delete(index)
+        self._confirm_delete_if_needed()
+
+        print(f"[WAIT] 삭제 반영 확인 중: {title}")
+        try:
+            WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
+                lambda _: self.history_titles() != before_titles
+            )
+        except TimeoutException as error:
+            raise RuntimeError(
+                f"삭제 버튼을 눌렀지만 히스토리 목록이 변경되지 않았습니다: {title}"
+            ) from error
+        print(f"[DONE] 삭제 반영 완료: {title}")
+        return title
+
+    def _history_rows(self):
+        """Virtuoso 목록에서 화면에 표시된 실제 히스토리 행을 반환합니다."""
+        history_list = self.first_visible(self.HISTORY_LISTS)
+        if not history_list:
+            return []
+        rows = []
+        for row in history_list.find_elements(By.XPATH, "./*"):
+            try:
+                if row.is_displayed() and self.normalize(row.text):
+                    rows.append(row)
+            except StaleElementReferenceException:
+                continue
+        return rows
+
+    def _open_history_row_menu_and_click_delete(self, index):
+        """삭제 직전 최신 목록에서 지정한 행의 메뉴를 열어 삭제합니다."""
+        last_error = None
+        for _ in range(5):
+            try:
+                rows = self._history_rows()
+                if index >= len(rows):
+                    raise RuntimeError(
+                        f"삭제할 히스토리 순서가 목록 범위를 벗어났습니다: {index}"
+                    )
+                row = rows[index]
+                self._reveal_history_actions(row)
+                menu_button = WebDriverWait(self.driver, 10).until(
+                    lambda _: self._history_menu_button_in_row(row)
+                )
+                self._click_dom(menu_button)
+                delete_action = self._wait_action({"삭제", "delete"})
+                self._click_dom(delete_action)
+                return
+            except StaleElementReferenceException as error:
+                last_error = error
+
+        raise RuntimeError(
+            f"목록이 갱신되어 {index + 1}번째 히스토리 메뉴를 열지 못했습니다."
+        ) from last_error
+
+    def _history_menu_button_in_row(self, row):
+        """전달받은 실제 히스토리 행 내부의 메뉴 버튼을 찾습니다."""
+        return self.driver.execute_script(
+            """
+            const row = arguments[0];
+            for (const type of ['mouseover', 'mouseenter', 'mousemove']) {
+                row.dispatchEvent(new MouseEvent(type, {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                }));
+            }
+            const selectors = [
+                '.menu-button--visible button',
+                '.menu-button button',
+                '.menu-button--visible [data-testid="ellipsis-verticalIcon"]',
+                '.menu-button [data-testid="ellipsis-verticalIcon"]',
+                '[data-testid="ellipsis-verticalIcon"]',
+            ];
+            for (const selector of selectors) {
+                const found = row.querySelector(selector);
+                if (found) return found.closest('button') || found;
+            }
+            return null;
+            """,
+            row,
         )
 
-    def _open_history_menu(self, item, key):
-        """호버 시 나타나는 히스토리 메뉴를 열고 삭제 항목을 기다립니다."""
-        self._reveal_history_actions(item)
-        menu_button = WebDriverWait(self.driver, 10).until(
-            lambda _: self._history_menu_button(item, key)
-        )
-        self._click_dom(menu_button)
-        WebDriverWait(self.driver, 10).until(
-            lambda _: self._find_action({"삭제", "delete"})
-        )
+    def _open_history_menu_and_click_delete(self, key, href=None):
+        """최신 요소로 메뉴와 삭제 버튼을 누르고 stale 발생 시 재시도합니다."""
+        last_error = None
+        for _ in range(3):
+            try:
+                item = (
+                    WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
+                        lambda _: self.history_entry(href)
+                    )
+                    if href
+                    else self.wait_for_history(key)
+                )
+                self._reveal_history_actions(item)
+                menu_button = WebDriverWait(self.driver, 10).until(
+                    lambda _: self._history_menu_button(key, href)
+                )
+                self._click_dom(menu_button)
+                WebDriverWait(self.driver, 10).until(
+                    lambda _: self._find_action({"삭제", "delete"})
+                )
+                delete_action = self._wait_action({"삭제", "delete"})
+                self._click_dom(delete_action)
+                return
+            except StaleElementReferenceException as error:
+                last_error = error
+
+        raise RuntimeError(
+            f"목록이 갱신되어 히스토리 메뉴를 열지 못했습니다: {key}"
+        ) from last_error
 
     def _reveal_history_actions(self, item):
         """대상 항목에 호버 이벤트를 보내 숨겨진 메뉴 버튼을 표시합니다."""
@@ -192,12 +316,14 @@ class HistoryPage(BasePage):
             item,
         )
 
-    def _history_menu_button(self, item, key):
+    def _history_menu_button(self, key, href=None):
         """DOM 구조가 달라도 대상 히스토리 행 내부의 메뉴 버튼을 찾습니다."""
         return self.driver.execute_script(
             """
-            const item = arguments[0];
-            const key = arguments[1];
+            const key = arguments[0];
+            const href = arguments[1];
+            const list = document.querySelector('[data-testid="virtuoso-item-list"]');
+            if (!list) return null;
             const selectors = [
                 '.menu-button--visible button',
                 '.menu-button button',
@@ -220,16 +346,26 @@ class HistoryPage(BasePage):
                 }
             };
             const exactRowMenu = row => {
-                if (!row || !row.innerText || !row.innerText.includes(key)) return null;
+                if (!row) return null;
+                if (!href && (!row.innerText || !row.innerText.includes(key))) return null;
                 dispatchHover(row);
                 const menus = collect(row);
                 return menus.length ? clickable(menus[0]) : null;
             };
 
-            let row = item;
-            for (let depth = 0; depth < 12 && row; depth++, row = row.parentElement) {
-                const menu = exactRowMenu(row);
-                if (menu) return menu;
+            if (href) {
+                const anchor = Array.from(list.querySelectorAll('a[href]')).find(
+                    element => element.href === href
+                );
+                for (
+                    let row = anchor, depth = 0;
+                    row && list.contains(row) && depth < 8;
+                    row = row.parentElement, depth++
+                ) {
+                    const menu = exactRowMenu(row);
+                    if (menu) return menu;
+                }
+                return null;
             }
 
             const rowSelectors = [
@@ -241,7 +377,7 @@ class HistoryPage(BasePage):
                 '[class*="History"]',
             ];
             for (const selector of rowSelectors) {
-                for (const candidate of document.querySelectorAll(selector)) {
+                for (const candidate of list.querySelectorAll(selector)) {
                     const menu = exactRowMenu(candidate);
                     if (menu) return menu;
                 }
@@ -249,8 +385,8 @@ class HistoryPage(BasePage):
 
             return null;
             """,
-            item,
             key,
+            href,
         )
 
     def _wait_action(self, labels, timeout=10, root=None):
@@ -332,27 +468,84 @@ class HistoryPage(BasePage):
             element,
         )
 
-    def history_titles(self):
-        """현재 화면에 표시된 모든 히스토리 제목을 수집합니다."""
+    def history_entries(self):
+        """현재 화면의 히스토리를 제목과 고유 대화 링크 단위로 수집합니다."""
         history_list = self.first_visible(self.HISTORY_LISTS)
         if not history_list:
             return []
 
-        # DOM 탐색 순서는 유지하며 상위/하위 요소에서 중복 수집된 제목은 한 번만 포함합니다.
-        titles = []
-        seen = set()
-        for element in history_list.find_elements(
-            By.CSS_SELECTOR,
-            "a, button, [role='button'], li",
-        ):
-            try:
-                if not element.is_displayed():
-                    continue
-                title = self.normalize(element.text)
-                if title and title not in seen:
-                    seen.add(title)
-                    titles.append(title)
-            except StaleElementReferenceException:
-                continue
-        return titles
+        # Virtuoso 목록의 직계 자식 하나가 실제 히스토리 한 건입니다. 동일 제목의
+        # 대화도 href가 다르므로 링크를 고유 식별자로 함께 보관합니다.
+        entries = self.driver.execute_script(
+            """
+            const list = arguments[0];
+            const visible = element => {
+                const rect = element.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0;
+            };
+            return Array.from(list.children)
+                .filter(visible)
+                .map(row => {
+                    const anchors = Array.from(row.querySelectorAll('a[href]'));
+                    const anchor = anchors.find(element =>
+                        visible(element) &&
+                        (element.innerText || '').trim()
+                    );
+                    const titleElement = anchor || Array.from(
+                        row.querySelectorAll("[role='button'], li")
+                    ).find(element =>
+                        visible(element) &&
+                        !element.closest('.menu-button') &&
+                        (element.innerText || '').trim()
+                    );
+                    return {
+                        title: ((titleElement || row).innerText || '').trim(),
+                        href: anchor ? anchor.href : null,
+                    };
+                })
+                .filter(entry => entry.title);
+            """,
+            history_list,
+        )
+        return [
+            {
+                "title": self.normalize(entry["title"]),
+                "href": entry.get("href"),
+            }
+            for entry in entries
+            if self.normalize(entry["title"])
+        ]
+
+    def history_titles(self):
+        """현재 화면에 표시된 모든 히스토리 제목을 행 순서대로 수집합니다."""
+        return [entry["title"] for entry in self.history_entries()]
+
+    def history_entry(self, href):
+        """고유 대화 링크와 일치하는 현재 히스토리 요소를 찾습니다."""
+        if not href:
+            return False
+        return self.driver.execute_script(
+            """
+            const list = document.querySelector('[data-testid="virtuoso-item-list"]');
+            if (!list) return null;
+            return Array.from(list.querySelectorAll('a[href]')).find(
+                element => element.href === arguments[0]
+            ) || null;
+            """,
+            href,
+        )
+
+    def _history_target_count(self, key, href=None):
+        """링크가 있으면 특정 대화를, 없으면 제목이 일치하는 대화 수를 반환합니다."""
+        if href:
+            return 1 if self.history_entry(href) else 0
+        return self.history_item_count(key)
+
+    def history_item_count(self, key):
+        """현재 사이드바에서 key를 포함하는 실제 히스토리 행의 개수를 셉니다."""
+        return sum(
+            1
+            for entry in self.history_entries()
+            if key in entry["title"]
+        )
 

@@ -22,9 +22,9 @@ def test_history_can_be_deleted(history_page):
     history_page.delete_history(history_key)
     assert not history_page.history_item(history_key)
 
-    # 최종 검증: 새로고침 후에도 삭제된 히스토리가 복구되지 않아야 합니다.
-    print(f"[VERIFY] 새로고침 후 삭제 상태 확인: {history_key}")
-    history_page.refresh()
+    # 최종 검증: 서비스 루트로 재접속해도 삭제된 히스토리가 복구되지 않아야 합니다.
+    print(f"[VERIFY] 재접속 후 삭제 상태 확인: {history_key}")
+    history_page.open()
     assert not history_page.history_item(history_key)
     print("[PASS] 히스토리 1개 삭제 완료")
 
@@ -56,29 +56,36 @@ def test_delete_histories_by_count(history_page, request):
 
     history_page.open()
     # 자동화 여부와 관계없이 현재 화면에 표시된 모든 히스토리를 수집합니다.
-    titles = history_page.history_titles()
-    if len(titles) < delete_count:
+    entries = history_page.history_entries()
+    if len(entries) < delete_count:
         pytest.fail(
-            f"화면에서 찾은 히스토리는 {len(titles)}개입니다. "
+            f"화면에서 찾은 히스토리는 {len(entries)}개입니다. "
             f"요청한 {delete_count}개를 삭제할 수 없습니다."
         )
 
     # 화면에 표시된 순서의 앞쪽 항목부터 요청한 개수만큼 삭제합니다.
-    targets = titles[:delete_count]
+    targets = entries[:delete_count]
     print("\n삭제 대상:")
-    for title in targets:
-        print(f"- {title}")
+    for entry in targets:
+        print(f"- {entry['title']}")
 
     print()
-    for index, title in enumerate(targets, start=1):
-        print(f"[DELETE {index}/{len(targets)}] {title}")
-        history_page.delete_history(title)
+    for index in range(1, delete_count + 1):
+        # 삭제할 때마다 최신 DOM의 첫 번째 행을 다시 가져옵니다. 제목이 같아도
+        # 서로 다른 행을 순서대로 처리하므로 특정 제목을 잘못 찾아가지 않습니다.
+        before_titles = history_page.history_titles()
+        current_title = before_titles[0]
+        print(f"[DELETE {index}/{delete_count}] {current_title}")
+        deleted_title = history_page.delete_history_at_index(0)
+        assert deleted_title == current_title
 
-    # 새로고침 후에도 모든 대상이 목록에서 사라진 상태인지 최종 확인합니다.
-    print("\n[VERIFY] 새로고침 후 삭제 상태 확인")
-    history_page.refresh()
-    for title in targets:
-        assert not history_page.history_item(title), (
-            f"새로고침 후 삭제한 히스토리가 다시 나타났습니다: {title}"
+        # 서버에 영구 반영됐는지 매 건 재접속해 확인합니다. 재접속 뒤에는 다음 반복에서
+        # 요소를 새로 수집하므로 가상 목록의 stale 요소를 재사용하지 않습니다.
+        history_page.open()
+        after_titles = history_page.history_titles()
+        assert after_titles != before_titles, (
+            f"재접속 후 삭제 전 목록이 그대로 복구됐습니다: {current_title}"
         )
-    print(f"[PASS] 히스토리 {len(targets)}개 삭제 완료")
+        print(f"[VERIFY {index}/{delete_count}] 영구 삭제 확인 완료")
+
+    print(f"[PASS] 히스토리 {delete_count}개 삭제 완료")
