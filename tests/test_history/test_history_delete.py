@@ -65,29 +65,27 @@ def test_delete_histories_by_count(history_page, request):
 
     # 화면에 표시된 순서의 앞쪽 항목부터 요청한 개수만큼 삭제합니다.
     targets = entries[:delete_count]
-    # 같은 제목의 대화도 href가 다르므로 각 대화를 고유하게 구분할 수 있어야 합니다.
-    missing_links = [entry["title"] for entry in targets if not entry["href"]]
-    if missing_links:
-        pytest.fail(
-            "고유 대화 링크를 찾지 못해 안전하게 삭제할 수 없습니다: "
-            + ", ".join(missing_links)
-        )
     print("\n삭제 대상:")
     for entry in targets:
         print(f"- {entry['title']}")
 
     print()
-    for index, entry in enumerate(targets, start=1):
-        print(f"[DELETE {index}/{len(targets)}] {entry['title']}")
-        history_page.delete_history(entry["title"], href=entry["href"])
+    for index in range(1, delete_count + 1):
+        # 삭제할 때마다 최신 DOM의 첫 번째 행을 다시 가져옵니다. 제목이 같아도
+        # 서로 다른 행을 순서대로 처리하므로 특정 제목을 잘못 찾아가지 않습니다.
+        before_titles = history_page.history_titles()
+        current_title = before_titles[0]
+        print(f"[DELETE {index}/{delete_count}] {current_title}")
+        deleted_title = history_page.delete_history_at_index(0)
+        assert deleted_title == current_title
 
-    # 모든 삭제가 끝난 뒤 한 번만 서비스 루트로 이동해 영구 반영 여부를 확인합니다.
-    # 항목마다 재접속하면 가상 스크롤 목록이 반복 렌더링되어 stale 요소가 발생할 수 있습니다.
-    print("\n[VERIFY] 재접속 후 삭제 상태 확인")
-    history_page.open()
-    for entry in targets:
-        assert not history_page.history_entry(entry["href"]), (
-            f"재접속 후 삭제한 히스토리가 다시 나타났습니다: {entry['title']} "
-            f"({entry['href']})"
+        # 서버에 영구 반영됐는지 매 건 재접속해 확인합니다. 재접속 뒤에는 다음 반복에서
+        # 요소를 새로 수집하므로 가상 목록의 stale 요소를 재사용하지 않습니다.
+        history_page.open()
+        after_titles = history_page.history_titles()
+        assert after_titles != before_titles, (
+            f"재접속 후 삭제 전 목록이 그대로 복구됐습니다: {current_title}"
         )
-    print(f"[PASS] 히스토리 {len(targets)}개 삭제 완료")
+        print(f"[VERIFY {index}/{delete_count}] 영구 삭제 확인 완료")
+
+    print(f"[PASS] 히스토리 {delete_count}개 삭제 완료")

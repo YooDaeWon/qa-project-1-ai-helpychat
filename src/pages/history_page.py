@@ -170,6 +170,99 @@ class HistoryPage(BasePage):
             ) from error
         print(f"[DONE] 삭제 반영 완료: {key}")
 
+    def delete_history_at_index(self, index=0):
+        """현재 화면에서 지정한 순서의 히스토리 행을 삭제합니다."""
+        before_titles = self.history_titles()
+        rows = self._history_rows()
+        if index >= len(rows):
+            raise RuntimeError(
+                f"삭제할 히스토리 순서가 목록 범위를 벗어났습니다: {index}"
+            )
+
+        title = self.normalize(rows[index].text)
+        self._open_history_row_menu_and_click_delete(index)
+        self._confirm_delete_if_needed()
+
+        print(f"[WAIT] 삭제 반영 확인 중: {title}")
+        try:
+            WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
+                lambda _: self.history_titles() != before_titles
+            )
+        except TimeoutException as error:
+            raise RuntimeError(
+                f"삭제 버튼을 눌렀지만 히스토리 목록이 변경되지 않았습니다: {title}"
+            ) from error
+        print(f"[DONE] 삭제 반영 완료: {title}")
+        return title
+
+    def _history_rows(self):
+        """Virtuoso 목록에서 화면에 표시된 실제 히스토리 행을 반환합니다."""
+        history_list = self.first_visible(self.HISTORY_LISTS)
+        if not history_list:
+            return []
+        rows = []
+        for row in history_list.find_elements(By.XPATH, "./*"):
+            try:
+                if row.is_displayed() and self.normalize(row.text):
+                    rows.append(row)
+            except StaleElementReferenceException:
+                continue
+        return rows
+
+    def _open_history_row_menu_and_click_delete(self, index):
+        """삭제 직전 최신 목록에서 지정한 행의 메뉴를 열어 삭제합니다."""
+        last_error = None
+        for _ in range(5):
+            try:
+                rows = self._history_rows()
+                if index >= len(rows):
+                    raise RuntimeError(
+                        f"삭제할 히스토리 순서가 목록 범위를 벗어났습니다: {index}"
+                    )
+                row = rows[index]
+                self._reveal_history_actions(row)
+                menu_button = WebDriverWait(self.driver, 10).until(
+                    lambda _: self._history_menu_button_in_row(row)
+                )
+                self._click_dom(menu_button)
+                delete_action = self._wait_action({"삭제", "delete"})
+                self._click_dom(delete_action)
+                return
+            except StaleElementReferenceException as error:
+                last_error = error
+
+        raise RuntimeError(
+            f"목록이 갱신되어 {index + 1}번째 히스토리 메뉴를 열지 못했습니다."
+        ) from last_error
+
+    def _history_menu_button_in_row(self, row):
+        """전달받은 실제 히스토리 행 내부의 메뉴 버튼을 찾습니다."""
+        return self.driver.execute_script(
+            """
+            const row = arguments[0];
+            for (const type of ['mouseover', 'mouseenter', 'mousemove']) {
+                row.dispatchEvent(new MouseEvent(type, {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                }));
+            }
+            const selectors = [
+                '.menu-button--visible button',
+                '.menu-button button',
+                '.menu-button--visible [data-testid="ellipsis-verticalIcon"]',
+                '.menu-button [data-testid="ellipsis-verticalIcon"]',
+                '[data-testid="ellipsis-verticalIcon"]',
+            ];
+            for (const selector of selectors) {
+                const found = row.querySelector(selector);
+                if (found) return found.closest('button') || found;
+            }
+            return null;
+            """,
+            row,
+        )
+
     def _open_history_menu_and_click_delete(self, key, href=None):
         """최신 요소로 메뉴와 삭제 버튼을 누르고 stale 발생 시 재시도합니다."""
         last_error = None
