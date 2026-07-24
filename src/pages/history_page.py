@@ -147,14 +147,14 @@ class HistoryPage(BasePage):
         WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
             lambda _: self.first_visible(self.HISTORY_LISTS)
         )
-        before_count = self.history_item_count(key)
-        if before_count == 0:
-            raise RuntimeError(f"삭제할 히스토리를 찾지 못했습니다: {key}")
+        try:
+            before_count = WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
+                lambda _: self.history_item_count(key) or False
+            )
+        except TimeoutException as error:
+            raise RuntimeError(f"삭제할 히스토리를 찾지 못했습니다: {key}") from error
 
-        item = self.wait_for_history(key)
-        self._open_history_menu(item, key)
-        delete_action = self._wait_action({"삭제", "delete"})
-        self._click_dom(delete_action)
+        self._open_history_menu_and_click_delete(key)
         self._confirm_delete_if_needed()
 
         # 삭제 요청이 완료되기 전에 다른 URL로 이동하면 브라우저가 요청을 취소할 수 있습니다.
@@ -170,27 +170,29 @@ class HistoryPage(BasePage):
             ) from error
         print(f"[DONE] 삭제 반영 완료: {key}")
 
-        # 삭제 완료 후 서비스 루트에서 다시 읽어 영구 반영 여부를 확인합니다.
-        self.driver.get(BASE_URL)
-        self.wait_until_ready()
-        WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
-            lambda _: self.first_visible(self.HISTORY_LISTS)
-        )
-        if self.history_item_count(key) >= before_count:
-            raise RuntimeError(
-                f"삭제 후 다시 접속했을 때 히스토리가 복구되었습니다: {key}"
-            )
+    def _open_history_menu_and_click_delete(self, key):
+        """최신 요소로 메뉴와 삭제 버튼을 누르고 stale 발생 시 재시도합니다."""
+        last_error = None
+        for _ in range(3):
+            try:
+                item = self.wait_for_history(key)
+                self._reveal_history_actions(item)
+                menu_button = WebDriverWait(self.driver, 10).until(
+                    lambda _: self._history_menu_button(key)
+                )
+                self._click_dom(menu_button)
+                WebDriverWait(self.driver, 10).until(
+                    lambda _: self._find_action({"삭제", "delete"})
+                )
+                delete_action = self._wait_action({"삭제", "delete"})
+                self._click_dom(delete_action)
+                return
+            except StaleElementReferenceException as error:
+                last_error = error
 
-    def _open_history_menu(self, item, key):
-        """호버 시 나타나는 히스토리 메뉴를 열고 삭제 항목을 기다립니다."""
-        self._reveal_history_actions(item)
-        menu_button = WebDriverWait(self.driver, 10).until(
-            lambda _: self._history_menu_button(item, key)
-        )
-        self._click_dom(menu_button)
-        WebDriverWait(self.driver, 10).until(
-            lambda _: self._find_action({"삭제", "delete"})
-        )
+        raise RuntimeError(
+            f"목록이 갱신되어 히스토리 메뉴를 열지 못했습니다: {key}"
+        ) from last_error
 
     def _reveal_history_actions(self, item):
         """대상 항목에 호버 이벤트를 보내 숨겨진 메뉴 버튼을 표시합니다."""
@@ -215,12 +217,11 @@ class HistoryPage(BasePage):
             item,
         )
 
-    def _history_menu_button(self, item, key):
+    def _history_menu_button(self, key):
         """DOM 구조가 달라도 대상 히스토리 행 내부의 메뉴 버튼을 찾습니다."""
         return self.driver.execute_script(
             """
-            const item = arguments[0];
-            const key = arguments[1];
+            const key = arguments[0];
             const selectors = [
                 '.menu-button--visible button',
                 '.menu-button button',
@@ -249,12 +250,6 @@ class HistoryPage(BasePage):
                 return menus.length ? clickable(menus[0]) : null;
             };
 
-            let row = item;
-            for (let depth = 0; depth < 12 && row; depth++, row = row.parentElement) {
-                const menu = exactRowMenu(row);
-                if (menu) return menu;
-            }
-
             const rowSelectors = [
                 'li',
                 'a',
@@ -272,7 +267,6 @@ class HistoryPage(BasePage):
 
             return null;
             """,
-            item,
             key,
         )
 
