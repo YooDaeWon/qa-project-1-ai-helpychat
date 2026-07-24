@@ -144,19 +144,42 @@ class HistoryPage(BasePage):
 
     def delete_history(self, key):
         """히스토리를 삭제하고 사이드바에서 사라졌는지 확인합니다."""
+        WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
+            lambda _: self.first_visible(self.HISTORY_LISTS)
+        )
+        before_count = self.history_item_count(key)
+        if before_count == 0:
+            raise RuntimeError(f"삭제할 히스토리를 찾지 못했습니다: {key}")
+
         item = self.wait_for_history(key)
         self._open_history_menu(item, key)
         delete_action = self._wait_action({"삭제", "delete"})
         self._click_dom(delete_action)
         self._confirm_delete_if_needed()
 
-        # Reloading the deleted conversation URL can restore the stale active item.
-        # Return to the service root before reading the sidebar again.
+        # 삭제 요청이 완료되기 전에 다른 URL로 이동하면 브라우저가 요청을 취소할 수 있습니다.
+        # 현재 화면에서 대상 항목 수가 실제로 감소한 것을 먼저 확인합니다.
+        print(f"[WAIT] 삭제 반영 확인 중: {key}")
+        try:
+            WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
+                lambda _: self.history_item_count(key) < before_count
+            )
+        except TimeoutException as error:
+            raise RuntimeError(
+                f"삭제 버튼을 눌렀지만 히스토리가 목록에서 줄어들지 않았습니다: {key}"
+            ) from error
+        print(f"[DONE] 삭제 반영 완료: {key}")
+
+        # 삭제 완료 후 서비스 루트에서 다시 읽어 영구 반영 여부를 확인합니다.
         self.driver.get(BASE_URL)
         self.wait_until_ready()
         WebDriverWait(self.driver, DEFAULT_TIMEOUT).until(
-            lambda _: not self.history_item(key)
+            lambda _: self.first_visible(self.HISTORY_LISTS)
         )
+        if self.history_item_count(key) >= before_count:
+            raise RuntimeError(
+                f"삭제 후 다시 접속했을 때 히스토리가 복구되었습니다: {key}"
+            )
 
     def _open_history_menu(self, item, key):
         """호버 시 나타나는 히스토리 메뉴를 열고 삭제 항목을 기다립니다."""
@@ -355,4 +378,36 @@ class HistoryPage(BasePage):
             except StaleElementReferenceException:
                 continue
         return titles
+
+    def history_item_count(self, key):
+        """현재 사이드바에서 key를 포함하는 서로 다른 히스토리 행의 개수를 셉니다."""
+        history_list = self.first_visible(self.HISTORY_LISTS)
+        if not history_list:
+            return 0
+
+        matched_rows = set()
+        for element in history_list.find_elements(
+            By.CSS_SELECTOR,
+            "a, button, [role='button'], li",
+        ):
+            try:
+                if not element.is_displayed():
+                    continue
+                text = self.normalize(element.text)
+                if key not in text:
+                    continue
+
+                row = self.driver.execute_script(
+                    """
+                    const element = arguments[0];
+                    return element.closest(
+                        "li, a, [role='listitem'], [data-testid*='history']"
+                    ) || element;
+                    """,
+                    element,
+                )
+                matched_rows.add(row.id)
+            except StaleElementReferenceException:
+                continue
+        return len(matched_rows)
 
