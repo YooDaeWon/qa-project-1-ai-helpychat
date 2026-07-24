@@ -1,4 +1,5 @@
 import os
+from collections import Counter
 
 import pytest
 
@@ -65,6 +66,13 @@ def test_delete_histories_by_count(history_page, request):
 
     # 화면에 표시된 순서의 앞쪽 항목부터 요청한 개수만큼 삭제합니다.
     targets = titles[:delete_count]
+    # 같은 제목의 대화도 서로 다른 히스토리입니다. 삭제 전 제목별 개수를 저장해 두고
+    # 최종 검증에서는 제목의 완전한 부재가 아니라 삭제한 만큼 감소했는지 확인합니다.
+    delete_counts = Counter(targets)
+    before_counts = {
+        title: history_page.history_item_count(title)
+        for title in delete_counts
+    }
     print("\n삭제 대상:")
     for title in targets:
         print(f"- {title}")
@@ -78,8 +86,12 @@ def test_delete_histories_by_count(history_page, request):
     # 항목마다 재접속하면 가상 스크롤 목록이 반복 렌더링되어 stale 요소가 발생할 수 있습니다.
     print("\n[VERIFY] 재접속 후 삭제 상태 확인")
     history_page.open()
-    for title in targets:
-        assert not history_page.history_item(title), (
-            f"재접속 후 삭제한 히스토리가 다시 나타났습니다: {title}"
+    for title, deleted_count in delete_counts.items():
+        expected_count = before_counts[title] - deleted_count
+        actual_count = history_page.history_item_count(title)
+        assert actual_count <= expected_count, (
+            f"재접속 후 삭제 개수가 일치하지 않습니다: {title} "
+            f"(삭제 전 {before_counts[title]}개, 삭제 요청 {deleted_count}개, "
+            f"현재 {actual_count}개)"
         )
     print(f"[PASS] 히스토리 {len(targets)}개 삭제 완료")

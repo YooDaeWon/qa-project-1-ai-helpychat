@@ -355,23 +355,33 @@ class HistoryPage(BasePage):
         if not history_list:
             return []
 
-        # DOM 탐색 순서는 유지하며 상위/하위 요소에서 중복 수집된 제목은 한 번만 포함합니다.
-        titles = []
-        seen = set()
-        for element in history_list.find_elements(
-            By.CSS_SELECTOR,
-            "a, button, [role='button'], li",
-        ):
-            try:
-                if not element.is_displayed():
-                    continue
-                title = self.normalize(element.text)
-                if title and title not in seen:
-                    seen.add(title)
-                    titles.append(title)
-            except StaleElementReferenceException:
-                continue
-        return titles
+        # Virtuoso 목록의 직계 자식 하나가 실제 히스토리 한 건입니다. 제목 문자열로
+        # 중복을 제거하면 같은 질문으로 만든 서로 다른 대화가 한 건으로 합쳐지므로,
+        # 행 단위로 수집해 동일한 제목도 각각 유지합니다.
+        titles = self.driver.execute_script(
+            """
+            const list = arguments[0];
+            const visible = element => {
+                const rect = element.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0;
+            };
+            return Array.from(list.children)
+                .filter(visible)
+                .map(row => {
+                    const titleElement = Array.from(
+                        row.querySelectorAll("a, [role='button'], li")
+                    ).find(element =>
+                        visible(element) &&
+                        !element.closest('.menu-button') &&
+                        (element.innerText || '').trim()
+                    );
+                    return ((titleElement || row).innerText || '').trim();
+                })
+                .filter(Boolean);
+            """,
+            history_list,
+        )
+        return [self.normalize(title) for title in titles if self.normalize(title)]
 
     def history_item_count(self, key):
         """현재 사이드바에서 key를 포함하는 서로 다른 히스토리 행의 개수를 셉니다."""
