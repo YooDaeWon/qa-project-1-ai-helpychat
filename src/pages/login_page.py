@@ -273,18 +273,29 @@ class LoginUiPage:
         self.password_input().send_keys(password)
         self.login_button().click()
 
-    def expect_error(self, email, password, expected_msg):
-        """로그인 제출 후 화면 에러 문구에 expected_msg가 뜰 때까지 대기, 실제 문구 반환.
-        제한시간 안에 안 뜨면 그 시점의 문구를 반환한다 (판정은 호출부 assert 담당)."""
+    def expect_error(self, email, password):
+        """로그인 제출 후 확정된 화면 에러 문구를 반환한다 (판정은 호출부 assert 담당).
+
+        기대 문구가 뜨는 순간 반환하면 안 된다. 이 화면은 클라이언트 검증 문구가 먼저
+        잠깐 떴다가 서버 응답 문구로 바뀌므로(예: '잘못된 이메일 형식입니다.' 0.5초 →
+        '예기치 못한 문제가 발생하였습니다.'), 과도기 문구를 잡아 거짓 통과할 수 있다.
+        """
         self.submit_login(email, password)
-        try:
-            self.wait.until(
-                EC.text_to_be_present_in_element(self.ERROR_TEXT, expected_msg)
-            )
-        except TimeoutException:
-            pass
+        return self.settled_error_text()
+
+    def settled_error_text(self, settle=1.5):
+        """에러 문구가 settle초 동안 바뀌지 않을 때까지 기다린 뒤 그 값을 반환한다."""
+        deadline = time.monotonic() + DEFAULT_TIMEOUT
         text = self.error_text_now()
-        log.info("화면 문구: '%s'", text)
+        last_change = time.monotonic()
+        while time.monotonic() < deadline:
+            time.sleep(0.2)
+            current = self.error_text_now()
+            if current != text:
+                text, last_change = current, time.monotonic()
+            elif text and time.monotonic() - last_change >= settle:
+                break
+        log.info("확정 화면 문구: '%s'", text)
         return text
 
     def error_text_now(self):
